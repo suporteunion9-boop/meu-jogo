@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Super Football — Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   DESIGN TOKENS
+   ========================================================================= */
+:root{
+  --navy-900:#0d1230;
+  --navy-800:#151c42;
+  --navy-700:#1f2a5c;
+  --pitch-1:#2fae5a;
+  --pitch-2:#38c76a;
+  --pitch-line:rgba(255,255,255,.85);
+  --sun:#ffd23f;
+  --sun-dark:#e0a800;
+  --coral:#ff5d5d;
+  --sky:#8fd3ff;
+  --ink:#0d1230;
+  --paper:#f4f7ff;
+  --font-display:'Fredoka','Baloo 2',system-ui,sans-serif;
+  --font-body:'Rubik',system-ui,sans-serif;
+  --radius-lg:22px;
+  --radius-md:14px;
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;width:100%;height:100%;overflow:hidden;
+  background:var(--navy-900);
+  font-family:var(--font-body);
+  color:var(--paper);
+  -webkit-user-select:none;user-select:none;
+  touch-action:none;
+}
+button{font-family:var(--font-display);}
+h1,h2,h3{font-family:var(--font-display);margin:0;}
+
+#app{position:fixed;inset:0;overflow:hidden;}
+
+/* animated stadium-light backdrop used behind menu-style screens */
+.stadium-bg{
+  position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(255,210,63,.18), transparent 55%),
+    radial-gradient(ellipse at 85% 110%, rgba(143,211,255,.16), transparent 55%),
+    linear-gradient(180deg,var(--navy-900),var(--navy-800) 60%,var(--navy-700));
+  overflow:hidden;
+}
+.stadium-bg .stripe{
+  position:absolute;top:0;bottom:0;width:6%;
+  background:rgba(255,255,255,.025);
+  transform:skewX(-12deg);
+  animation:driftStripe 14s linear infinite;
+}
+@keyframes driftStripe{from{transform:skewX(-12deg) translateX(0);}to{transform:skewX(-12deg) translateX(120vw);}}
+.stadium-bg .ball-bg{
+  position:absolute;width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, #fff, #d9d9d9 55%, #aaa 100%);
+  box-shadow:0 0 22px rgba(255,255,255,.25);
+  opacity:.5;
+  animation:floatBall 9s ease-in-out infinite;
+}
+@keyframes floatBall{
+  0%,100%{transform:translate(0,0) rotate(0deg);}
+  50%{transform:translate(14px,-26px) rotate(180deg);}
+}
+
+/* =========================================================================
+   SCREEN FRAMEWORK
+   ========================================================================= */
+.screen{
+  position:absolute;inset:0;z-index:1;
+  display:none;flex-direction:column;align-items:center;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+  overflow-y:auto;overflow-x:hidden;
+}
+.screen.active{display:flex;}
+.screen-inner{width:100%;max-width:900px;margin:0 auto;padding:18px 20px 34px;position:relative;z-index:2;}
+
+.btn{
+  font-family:var(--font-display);font-weight:600;font-size:17px;letter-spacing:.2px;
+  color:var(--ink);background:var(--sun);
+  border:none;border-radius:999px;padding:15px 28px;
+  cursor:pointer;box-shadow:0 6px 0 var(--sun-dark), 0 10px 18px rgba(0,0,0,.3);
+  transition:transform .08s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--sun-dark), 0 4px 10px rgba(0,0,0,.3);}
+.btn.secondary{background:transparent;color:var(--paper);border:2px solid rgba(244,247,255,.35);box-shadow:none;}
+.btn.secondary:active{transform:translateY(2px);background:rgba(244,247,255,.08);}
+.btn.coral{background:var(--coral);box-shadow:0 6px 0 #c43f3f, 0 10px 18px rgba(0,0,0,.3);color:#fff;}
+.btn.coral:active{box-shadow:0 2px 0 #c43f3f;}
+.btn.block{width:100%;}
+.btn.small{padding:10px 18px;font-size:14px;}
+.btn[disabled]{opacity:.35;pointer-events:none;}
+
+.pill-row{display:flex;gap:10px;flex-wrap:wrap;}
+.pill{
+  padding:9px 16px;border-radius:999px;background:rgba(244,247,255,.08);
+  border:2px solid rgba(244,247,255,.15);cursor:pointer;font-weight:500;font-size:14px;color:var(--paper);
+}
+.pill.active{background:var(--sun);color:var(--ink);border-color:var(--sun);font-weight:700;}
+
+.card-panel{
+  background:rgba(21,28,66,.72);border:1px solid rgba(244,247,255,.1);
+  border-radius:var(--radius-lg);padding:20px;backdrop-filter:blur(6px);
+}
+.section-title{font-size:13px;text-transform:none;letter-spacing:.3px;color:#b9c2ea;margin:0 0 10px;font-weight:500;}
+
+/* ---- MENU ---- */
+#screen-menu .screen-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;text-align:center;gap:26px;}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.logo-ball{font-size:46px;animation:spinBall 4s linear infinite;}
+@keyframes spinBall{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.logo-title{font-size:clamp(38px,9vw,64px);font-weight:700;color:var(--paper);line-height:1;
+  text-shadow:0 4px 0 rgba(0,0,0,.25);}
+.logo-title span{color:var(--sun);}
+.logo-sub{color:#9fb0e6;font-size:15px;letter-spacing:.5px;}
+.menu-btns{display:flex;flex-direction:column;gap:14px;width:min(340px,80vw);}
+
+/* ---- TEAM SELECT ---- */
+.slots-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+.slot-card{
+  flex:1;border-radius:var(--radius-md);padding:14px;cursor:pointer;
+  border:3px solid transparent;background:rgba(244,247,255,.06);
+  display:flex;align-items:center;gap:12px;transition:border-color .15s;
+}
+.slot-card.focused{border-color:var(--sun);}
+.jersey-dot{width:38px;height:38px;border-radius:10px;flex-shrink:0;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);}
+.slot-label{font-size:11px;color:#9fb0e6;font-weight:500;}
+.slot-name{font-weight:700;font-family:var(--font-display);font-size:16px;}
+.vs-badge{font-family:var(--font-display);font-weight:700;color:var(--sun);font-size:18px;}
+
+.team-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px;margin-bottom:18px;
+}
+.team-card{
+  background:rgba(244,247,255,.06);border:2px solid rgba(244,247,255,.08);border-radius:var(--radius-md);
+  padding:10px;text-align:center;cursor:pointer;
+}
+.team-card.picked1{border-color:#5cd0ff;box-shadow:0 0 0 2px #5cd0ff inset;}
+.team-card.picked2{border-color:var(--coral);box-shadow:0 0 0 2px var(--coral) inset;}
+.team-jersey{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;position:relative;box-shadow:inset 0 0 0 3px rgba(0,0,0,.2);}
+.team-name{font-size:13px;font-weight:700;font-family:var(--font-display);margin-bottom:6px;}
+.stat-bar{height:4px;border-radius:3px;background:rgba(0,0,0,.25);margin:3px 0;overflow:hidden;}
+.stat-bar i{display:block;height:100%;background:var(--sun);}
+.stat-label{font-size:9px;color:#c3cbee;display:flex;justify-content:space-between;}
+
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid rgba(244,247,255,.08);}
+.settings-row:last-child{border-bottom:none;}
+.settings-row .label{font-weight:500;font-size:14px;}
+
+/* ---- HOW TO PLAY ---- */
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:560px){.controls-grid{grid-template-columns:1fr;}}
+.key{
+  display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:26px;padding:0 6px;
+  background:rgba(244,247,255,.12);border-radius:6px;border-bottom:2px solid rgba(0,0,0,.3);
+  font-family:var(--font-display);font-size:12px;margin-right:8px;
+}
+.ctrl-row{display:flex;align-items:center;margin:8px 0;font-size:14px;}
+
+/* =========================================================================
+   MATCH SCREEN
+   ========================================================================= */
+#screen-match{padding:0;background:#0a0e24;}
+#match-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+#field-canvas{display:block;background:#0a0e24;touch-action:none;}
+
+#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:5;padding-top:calc(env(safe-area-inset-top,0px) + 8px);}
+#scoreboard{
+  display:flex;align-items:center;gap:0;background:rgba(13,18,48,.82);border-radius:16px;
+  padding:8px 4px;box-shadow:0 6px 16px rgba(0,0,0,.35);border:1px solid rgba(244,247,255,.12);
+  pointer-events:auto;
+}
+.sb-team{display:flex;align-items:center;gap:7px;padding:0 12px;font-family:var(--font-display);font-weight:600;font-size:14px;}
+.sb-dot{width:14px;height:14px;border-radius:4px;}
+.sb-score{font-size:22px;font-weight:700;min-width:26px;text-align:center;}
+.sb-mid{display:flex;flex-direction:column;align-items:center;padding:0 10px;border-left:1px solid rgba(244,247,255,.15);border-right:1px solid rgba(244,247,255,.15);}
+#sb-timer{font-family:var(--font-display);font-size:16px;font-weight:700;letter-spacing:.5px;}
+#sb-mode{font-size:9px;color:#9fb0e6;}
+
+#pause-btn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:6;
+  width:38px;height:38px;border-radius:50%;background:rgba(13,18,48,.82);border:1px solid rgba(244,247,255,.15);
+  color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;pointer-events:auto;}
+
+#power-bars{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;padding:0 14px 10px;pointer-events:none;z-index:5;}
+.power-wrap{width:120px;height:12px;background:rgba(13,18,48,.6);border-radius:8px;overflow:hidden;border:1px solid rgba(244,247,255,.15);opacity:0;transition:opacity .15s;}
+.power-wrap.show{opacity:1;}
+.power-fill{height:100%;width:0%;background:linear-gradient(90deg,#5cd0ff,var(--sun),var(--coral));}
+
+/* center overlays: countdown / goal / kickoff */
+#center-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:8;}
+.overlay-text{font-family:var(--font-display);font-weight:700;text-align:center;text-shadow:0 6px 20px rgba(0,0,0,.5);}
+.overlay-countdown{font-size:min(22vw,140px);color:var(--sun);}
+.overlay-goal{font-size:min(16vw,88px);color:var(--sun);
+  -webkit-text-stroke:3px var(--ink);animation:goalPop .5s cubic-bezier(.2,1.4,.4,1);}
+@keyframes goalPop{0%{transform:scale(.2) rotate(-8deg);opacity:0;}60%{transform:scale(1.15) rotate(2deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+.overlay-sub{font-size:min(6vw,26px);color:#fff;margin-top:6px;}
+
+/* =========================================================================
+   TOUCH CONTROLS
+   ========================================================================= */
+#touch-layer{position:absolute;inset:0;z-index:7;pointer-events:none;}
+.joy-zone{position:absolute;bottom:18px;width:130px;height:130px;pointer-events:auto;}
+.joy-zone.p1{left:16px;}
+.joy-zone.p2{right:16px;}
+.joy-base{position:absolute;inset:0;border-radius:50%;background:rgba(244,247,255,.12);border:2px solid rgba(244,247,255,.25);}
+.joy-stick{position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.55);
+  top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.8);}
+.kick-btn{
+  position:absolute;bottom:32px;width:74px;height:74px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ff8484,var(--coral));
+  border:3px solid rgba(255,255,255,.5);color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px;
+  display:flex;align-items:center;justify-content:center;pointer-events:auto;box-shadow:0 4px 10px rgba(0,0,0,.35);
+}
+.kick-btn.p1{left:158px;}
+.kick-btn.p2{right:158px;}
+.kick-btn:active{transform:scale(.9);}
+
+/* =========================================================================
+   PAUSE / RESULT
+   ========================================================================= */
+#screen-pause .screen-inner,#screen-gameover .screen-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;text-align:center;gap:16px;}
+.result-trophy{font-size:64px;}
+.result-score{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,7vw,44px);display:flex;align-items:center;gap:16px;}
+.result-score .rs-team{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:15px;}
+.result-score .rs-dot{width:20px;height:20px;border-radius:6px;}
+
+#orientation-warning{
+  position:fixed;inset:0;z-index:999;background:var(--navy-900);display:none;
+  align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:30px;
+}
+@media (max-width:900px) and (orientation:portrait){
+  #orientation-warning.enabled{display:flex;}
+}
+.rotate-icon{font-size:52px;animation:rotateHint 1.6s ease-in-out infinite;}
+@keyframes rotateHint{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
+
+.scroll-fade{max-height:calc(100vh - 40px);overflow-y:auto;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:rgba(244,247,255,.2);border-radius:3px;}
+
+.small-note{font-size:12px;color:#8f9bcf;line-height:1.5;}
+.top-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===================== MENU ===================== -->
+  <div id="screen-menu" class="screen active">
+    <div class="stadium-bg" id="menu-bg"></div>
+    <div class="screen-inner">
+      <div class="logo-wrap">
+        <div class="logo-ball">⚽</div>
+        <div class="logo-title">SUPER <span>FOOTBALL</span></div>
+        <div class="logo-sub">FUTEBOL ARCADE 2D</div>
+      </div>
+      <div class="menu-btns">
+        <button class="btn block" data-nav="jogar">JOGAR (1 JOGADOR)</button>
+        <button class="btn coral block" data-nav="doisjogadores">2 JOGADORES</button>
+        <button class="btn secondary block" data-nav="settings">CONFIGURAÇÕES</button>
+        <button class="btn secondary block" data-nav="howto">COMO JOGAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TEAM SELECT ===================== -->
+  <div id="screen-team-select" class="screen">
+    <div class="stadium-bg"></div>
+    <div class="screen-inner scroll-fade">
+      <div class="top-nav">
+        <button class="btn secondary small" data-nav="menu">← Voltar</button>
+        <h2 id="ts-title" style="font-size:16px;color:#9fb0e6;">SELECIONE OS TIMES</h2>
+        <div style="width:70px;"></div>
+      </div>
+
+      <div class="slots-row">
+        <div class="slot-card focused" id="slot1" data-slot="1">
+          <div class="jersey-dot" id="slot1-dot"></div>
+          <div>
+            <div class="slot-label" id="slot1-label">TIME 1 (VOCÊ)</div>
+            <div class="slot-name" id="slot1-name">Escolha</div>
+          </div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="slot-card" id="slot2" data-slot="2">
+          <div class="jersey-dot" id="slot2-dot"></div>
+          <div>
+            <div class="slot-label" id="slot2-label">TIME 2 (CPU)</div>
+            <div class="slot-name" id="slot2-name">Escolha</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="team-grid" id="team-grid"></div>
+
+      <div class="card-panel" style="margin-bottom:14px;" id="difficulty-panel">
+        <div class="section-title">DIFICULDADE DA CPU</div>
+        <div class="pill-row" id="difficulty-pills">
+          <div class="pill" data-diff="facil">Fácil</div>
+          <div class="pill active" data-diff="normal">Normal</div>
+          <div class="pill" data-diff="dificil">Difícil</div>
+        </div>
+      </div>
+
+      <div class="card-panel" style="margin-bottom:18px;">
+        <div class="section-title">DURAÇÃO DA PARTIDA</div>
+        <div class="pill-row" id="duration-pills">
+          <div class="pill" data-dur="60">1 min</div>
+          <div class="pill active" data-dur="120">2 min</div>
+          <div class="pill" data-dur="180">3 min</div>
+          <div class="pill" data-dur="300">5 min</div>
+        </div>
+      </div>
+
+      <button class="btn block coral" id="btn-play-match">JOGAR ⚽</button>
+    </div>
+  </div>
+
+  <!-- ===================== HOW TO PLAY ===================== -->
+  <div id="screen-how-to-play" class="screen">
+    <div class="stadium-bg"></div>
+    <div class="screen-inner scroll-fade">
+      <div class="top-nav">
+        <button class="btn secondary small" data-nav="menu">← Voltar</button>
+        <h2 style="font-size:16px;color:#9fb0e6;">COMO JOGAR</h2>
+        <div style="width:70px;"></div>
+      </div>
+      <div class="card-panel" style="margin-bottom:14px;">
+        <div class="controls-grid">
+          <div>
+            <div class="section-title">⌨️ JOGADOR 1 (teclado)</div>
+            <div class="ctrl-row"><span class="key">W</span> Cima</div>
+            <div class="ctrl-row"><span class="key">A</span> Esquerda</div>
+            <div class="ctrl-row"><span class="key">S</span> Baixo</div>
+            <div class="ctrl-row"><span class="key">D</span> Direita</div>
+            <div class="ctrl-row"><span class="key">ESPAÇO</span> Segurar p/ carregar chute</div>
+          </div>
+          <div>
+            <div class="section-title">⌨️ JOGADOR 2 (teclado)</div>
+            <div class="ctrl-row"><span class="key">↑</span> Cima</div>
+            <div class="ctrl-row"><span class="key">←</span> Esquerda</div>
+            <div class="ctrl-row"><span class="key">↓</span> Baixo</div>
+            <div class="ctrl-row"><span class="key">→</span> Direita</div>
+            <div class="ctrl-row"><span class="key">ENTER</span> Segurar p/ carregar chute</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-panel" style="margin-bottom:14px;">
+        <div class="section-title">📱 CELULAR / TABLET</div>
+        <p class="small-note">Use o joystick virtual no canto da tela para mover seu jogador e o botão vermelho "CHUTAR" para chutar — segure para carregar a força do chute e solte para bater. No modo 2 jogadores, cada pessoa usa um lado da tela.</p>
+      </div>
+      <div class="card-panel">
+        <div class="section-title">⚽ DICAS</div>
+        <p class="small-note">Corra até a bola para dominá-la. Segure o botão de chute para carregar força — quanto mais tempo segurar, mais forte a bomba. O goleiro defende sozinho, mas fique atento aos contra-ataques da CPU!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div id="screen-settings" class="screen">
+    <div class="stadium-bg"></div>
+    <div class="screen-inner scroll-fade">
+      <div class="top-nav">
+        <button class="btn secondary small" data-nav="menu">← Voltar</button>
+        <h2 style="font-size:16px;color:#9fb0e6;">CONFIGURAÇÕES</h2>
+        <div style="width:70px;"></div>
+      </div>
+      <div class="card-panel">
+        <div class="settings-row">
+          <div class="label">🔊 Volume geral</div>
+          <input type="range" min="0" max="100" value="80" id="opt-volume">
+        </div>
+        <div class="settings-row">
+          <div class="label">🎵 Música</div>
+          <div class="pill-row"><div class="pill active" data-toggle="music" data-val="on">ON</div><div class="pill" data-toggle="music" data-val="off">OFF</div></div>
+        </div>
+        <div class="settings-row">
+          <div class="label">🔔 Efeitos sonoros</div>
+          <div class="pill-row"><div class="pill active" data-toggle="sfx" data-val="on">ON</div><div class="pill" data-toggle="sfx" data-val="off">OFF</div></div>
+        </div>
+        <div class="settings-row">
+          <div class="label">🎯 Dificuldade padrão</div>
+          <div class="pill-row" id="opt-difficulty-pills">
+            <div class="pill" data-diff="facil">Fácil</div>
+            <div class="pill active" data-diff="normal">Normal</div>
+            <div class="pill" data-diff="dificil">Difícil</div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="label">⏱️ Duração padrão</div>
+          <div class="pill-row" id="opt-duration-pills">
+            <div class="pill" data-dur="60">1 min</div>
+            <div class="pill active" data-dur="120">2 min</div>
+            <div class="pill" data-dur="180">3 min</div>
+            <div class="pill" data-dur="300">5 min</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MATCH ===================== -->
+  <div id="screen-match" class="screen">
+    <div id="match-stage">
+      <canvas id="field-canvas"></canvas>
+
+      <div id="hud">
+        <div id="scoreboard">
+          <div class="sb-team"><div class="sb-dot" id="sb-dot1"></div><span id="sb-name1">TIME 1</span><span class="sb-score" id="sb-score1">0</span></div>
+          <div class="sb-mid"><div id="sb-timer">02:00</div><div id="sb-mode">NORMAL</div></div>
+          <div class="sb-team"><span class="sb-score" id="sb-score2">0</span><span id="sb-name2">TIME 2</span><div class="sb-dot" id="sb-dot2"></div></div>
+        </div>
+      </div>
+      <button id="pause-btn">⏸</button>
+
+      <div id="power-bars">
+        <div class="power-wrap" id="power1"><div class="power-fill" id="power1-fill"></div></div>
+        <div class="power-wrap" id="power2"><div class="power-fill" id="power2-fill"></div></div>
+      </div>
+
+      <div id="center-overlay"></div>
+
+      <div id="touch-layer">
+        <div class="joy-zone p1" id="joy1"><div class="joy-base"></div><div class="joy-stick" id="joy1-stick"></div></div>
+        <div class="joy-zone p2" id="joy2" style="display:none;"><div class="joy-base"></div><div class="joy-stick" id="joy2-stick"></div></div>
+        <div class="kick-btn p1" id="kick1">CHUTAR</div>
+        <div class="kick-btn p2" id="kick2" style="display:none;">CHUTAR</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAUSE ===================== -->
+  <div id="screen-pause" class="screen">
+    <div class="stadium-bg"></div>
+    <div class="screen-inner">
+      <h2 style="font-size:34px;margin-bottom:10px;">⏸ PAUSADO</h2>
+      <div class="menu-btns">
+        <button class="btn block" id="btn-resume">CONTINUAR</button>
+        <button class="btn secondary block" id="btn-restart-match">REINICIAR PARTIDA</button>
+        <button class="btn secondary block" data-nav="menu">MENU PRINCIPAL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== GAME OVER ===================== -->
+  <div id="screen-gameover" class="screen">
+    <div class="stadium-bg"></div>
+    <div class="screen-inner">
+      <div class="result-trophy" id="go-trophy">🏆</div>
+      <h2 id="go-title" style="font-size:clamp(24px,6vw,38px);">VITÓRIA!</h2>
+      <div class="result-score">
+        <div class="rs-team"><div class="rs-dot" id="go-dot1"></div><span id="go-name1">TIME 1</span></div>
+        <div><span id="go-score1">0</span> x <span id="go-score2">0</span></div>
+        <div class="rs-team"><div class="rs-dot" id="go-dot2"></div><span id="go-name2">TIME 2</span></div>
+      </div>
+      <div class="menu-btns" style="margin-top:10px;">
+        <button class="btn block" id="btn-play-again">JOGAR NOVAMENTE</button>
+        <button class="btn secondary block" id="btn-choose-teams">ESCOLHER OUTROS TIMES</button>
+        <button class="btn secondary block" data-nav="menu">MENU PRINCIPAL</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="orientation-warning" class="enabled">
+    <div class="rotate-icon">📱</div>
+    <h2 style="font-size:22px;">Vire o dispositivo para jogar</h2>
+    <p class="small-note">O Super Football funciona melhor na horizontal.</p>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   1. CONFIG & CONSTANTS
+   ========================================================================= */
+const FW = 1000, FH = 600;               // virtual field resolution
+const GOAL_HALF = 78;                     // half-height of goal mouth
+const GOAL_DEPTH = 34;
+const BALL_R = 10;
+const PLAYER_R = 17;
+const WALL_Y_TOP = 26, WALL_Y_BOT = FH-26; // playable vertical bounds (touchline margin)
+
+/* =========================================================================
+   2. AUDIO SYSTEM (Web Audio API — no external files)
+   ========================================================================= */
+const AudioSys = (() => {
+  let ctx = null, master = null, sfxGain = null, musicGain = null;
+  let musicNodes = null, musicOn = false;
+  function ensure(){
+    if(ctx) return;
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = 0.8; master.connect(ctx.destination);
+    sfxGain = ctx.createGain(); sfxGain.gain.value = 1; sfxGain.connect(master);
+    musicGain = ctx.createGain(); musicGain.gain.value = 0.35; musicGain.connect(master);
+  }
+  function setVolume(v){ ensure(); master.gain.value = v; }
+  function setSfxEnabled(on){ ensure(); sfxGain.gain.value = on?1:0; }
+  function setMusicEnabled(on){
+    ensure(); musicOn = on;
+    if(on) startMusic(); else stopMusic();
+  }
+  function tone(freq,dur,type,vol,delay,g){
+    ensure();
+    const t0 = ctx.currentTime + (delay||0);
+    const osc = ctx.createOscillator(); osc.type = type||'sine'; osc.frequency.setValueAtTime(freq,t0);
+    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.0001,t0);
+    gn.gain.exponentialRampToValueAtTime(vol||0.3,t0+0.015);
+    gn.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    osc.connect(gn); gn.connect(g||sfxGain);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+    return osc;
+  }
+  function noiseBurst(dur,vol,filterFreq){
+    ensure();
+    const t0=ctx.currentTime;
+    const bufferSize = ctx.sampleRate*dur;
+    const buffer = ctx.createBuffer(1,bufferSize,ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i]=(Math.random()*2-1)*(1-i/bufferSize);
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const filt = ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value = filterFreq||2000;
+    const gn = ctx.createGain(); gn.gain.value = vol||0.4;
+    src.connect(filt); filt.connect(gn); gn.connect(sfxGain);
+    src.start(t0);
+  }
+  function kick(power){
+    ensure();
+    const f = 220 + power*260;
+    tone(f,0.14,'square',0.22+power*0.15);
+    noiseBurst(0.09,0.25+power*0.2,1800);
+  }
+  function bounce(){ noiseBurst(0.07,0.15,700); }
+  function whistle(){ tone(1500,0.35,'sawtooth',0.18); tone(1500,0.16,'sawtooth',0.16,0.42); }
+  function countBeep(final){ tone(final?1046:784,0.22,'square',0.3); }
+  function menuClick(){ tone(600,0.08,'triangle',0.2); }
+  function goalFanfare(){
+    ensure();
+    const notes=[523.25,659.25,783.99,1046.5];
+    notes.forEach((n,i)=>tone(n,0.32,'triangle',0.28,i*0.11));
+    noiseBurst(0.9,0.12,3000);
+  }
+  function startMusic(){
+    ensure();
+    if(musicNodes) return;
+    const o1=ctx.createOscillator(); o1.type='sine'; o1.frequency.value=110;
+    const o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=164.81;
+    const lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=0.12;
+    const lfoGain=ctx.createGain(); lfoGain.gain.value=0.06;
+    const g=ctx.createGain(); g.gain.value=0.0001;
+    lfo.connect(lfoGain); lfoGain.connect(g.gain);
+    o1.connect(g); o2.connect(g); g.connect(musicGain);
+    o1.start(); o2.start(); lfo.start();
+    g.gain.linearRampToValueAtTime(0.5, ctx.currentTime+1.2);
+    musicNodes={o1,o2,lfo,g};
+  }
+  function stopMusic(){
+    if(!musicNodes) return;
+    const {o1,o2,lfo,g}=musicNodes;
+    const t=ctx.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value,t);
+    g.gain.linearRampToValueAtTime(0.0001,t+0.6);
+    setTimeout(()=>{try{o1.stop();o2.stop();lfo.stop();}catch(e){}},700);
+    musicNodes=null;
+  }
+  return {ensure,setVolume,setSfxEnabled,setMusicEnabled,kick,bounce,whistle,countBeep,menuClick,goalFanfare,
+    get musicOn(){return musicOn;}};
+})();
+
+/* =========================================================================
+   3. SETTINGS / STORAGE
+   ========================================================================= */
+const Settings = {
+  volume: 80, music: true, sfx: true, difficulty: 'normal', duration: 120,
+  load(){
+    try{
+      const raw = localStorage.getItem('sf_settings');
+      if(raw) Object.assign(this, JSON.parse(raw));
+    }catch(e){}
+  },
+  save(){
+    try{ localStorage.setItem('sf_settings', JSON.stringify(
+      {volume:this.volume,music:this.music,sfx:this.sfx,difficulty:this.difficulty,duration:this.duration})); }catch(e){}
+  }
+};
+Settings.load();
+
+/* =========================================================================
+   4. TEAMS DATA (fictitious rosters — colors & names only, no crests/logos)
+   ========================================================================= */
+const TEAMS = [
+  {id:'brasil',   name:'Brasil',           primary:'#ffd400', secondary:'#0b8a3e', atk:5, def:3, spd:4},
+  {id:'argentina',name:'Argentina',        primary:'#8ec9f0', secondary:'#ffffff', atk:5, def:4, spd:4},
+  {id:'franca',   name:'França',           primary:'#3060c8', secondary:'#ffffff', atk:4, def:4, spd:4},
+  {id:'alemanha', name:'Alemanha',         primary:'#2b2b2b', secondary:'#e0442f', atk:4, def:5, spd:3},
+  {id:'espanha',  name:'Espanha',          primary:'#d62839', secondary:'#ffc400', atk:4, def:3, spd:5},
+  {id:'portugal', name:'Portugal',         primary:'#1c7a3e', secondary:'#e0442f', atk:5, def:3, spd:4},
+  {id:'inglaterra',name:'Inglaterra',      primary:'#f2f2f2', secondary:'#c8102e', atk:3, def:4, spd:4},
+  {id:'italia',   name:'Itália',           primary:'#2f6fd6', secondary:'#ffffff', atk:3, def:5, spd:3},
+  {id:'holanda',  name:'Holanda',          primary:'#ff8c1a', secondary:'#1c1c1c', atk:4, def:3, spd:5},
+  {id:'japao',    name:'Japão',            primary:'#2540a8', secondary:'#ffffff', atk:3, def:4, spd:5},
+  {id:'mexico',   name:'México',           primary:'#22a35a', secondary:'#ffffff', atk:3, def:3, spd:5},
+  {id:'eua',      name:'Estados Unidos',   primary:'#33397e', secondary:'#e04150', atk:3, def:4, spd:4},
+];
+
+/* =========================================================================
+   5. STATE / NAVIGATION
+   ========================================================================= */
+const UI = {
+  screens: {},
+  init(){
+    document.querySelectorAll('.screen').forEach(s=>this.screens[s.id]=s);
+  },
+  show(name){
+    const id = 'screen-'+name;
+    Object.values(this.screens).forEach(s=>s.classList.remove('active'));
+    if(this.screens[id]) this.screens[id].classList.add('active');
+  }
+};
+UI.init();
+
+document.querySelectorAll('[data-nav]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    AudioSys.menuClick();
+    const target = el.dataset.nav;
+    if(target==='jogar'){ Session.mode='cpu'; openTeamSelect(); }
+    else if(target==='doisjogadores'){ Session.mode='2p'; openTeamSelect(); }
+    else if(target==='howto'){ UI.show('how-to-play'); }
+    else if(target==='settings'){ UI.show('settings'); }
+    else if(target==='menu'){ Match.hardStop(); UI.show('menu'); }
+  });
+});
+
+/* =========================================================================
+   6. TEAM SELECT SCREEN LOGIC
+   ========================================================================= */
+const Session = {
+  mode: 'cpu',            // 'cpu' | '2p'
+  team1: TEAMS[0],
+  team2: TEAMS[1],
+  focusedSlot: 1,
+  difficulty: Settings.difficulty,
+  duration: Settings.duration,
+};
+
+function buildTeamGrid(){
+  const grid = document.getElementById('team-grid');
+  grid.innerHTML='';
+  TEAMS.forEach(team=>{
+    const card = document.createElement('div');
+    card.className='team-card';
+    card.dataset.id = team.id;
+    card.innerHTML = `
+      <div class="team-jersey" style="background:${team.primary};border-color:${team.secondary}"></div>
+      <div class="team-name">${team.name}</div>
+      <div class="stat-label"><span>ATA</span></div><div class="stat-bar"><i style="width:${team.atk*20}%"></i></div>
+      <div class="stat-label"><span>DEF</span></div><div class="stat-bar"><i style="width:${team.def*20}%"></i></div>
+      <div class="stat-label"><span>VEL</span></div><div class="stat-bar"><i style="width:${team.spd*20}%"></i></div>
+    `;
+    card.addEventListener('click', ()=>{
+      AudioSys.menuClick();
+      if(Session.focusedSlot===1){ Session.team1=team; Session.focusedSlot=2; }
+      else { Session.team2=team; Session.focusedSlot=1; }
+      refreshTeamSelectUI();
+    });
+    grid.appendChild(card);
+  });
+}
+buildTeamGrid();
+
+document.getElementById('slot1').addEventListener('click',()=>{Session.focusedSlot=1;refreshTeamSelectUI();});
+document.getElementById('slot2').addEventListener('click',()=>{Session.focusedSlot=2;refreshTeamSelectUI();});
+
+function refreshTeamSelectUI(){
+  document.getElementById('slot1-dot').style.background = Session.team1.primary;
+  document.getElementById('slot2-dot').style.background = Session.team2.primary;
+  document.getElementById('slot1-name').textContent = Session.team1.name;
+  document.getElementById('slot2-name').textContent = Session.team2.name;
+  document.getElementById('slot1').classList.toggle('focused', Session.focusedSlot===1);
+  document.getElementById('slot2').classList.toggle('focused', Session.focusedSlot===2);
+  document.getElementById('slot2-label').textContent = Session.mode==='2p' ? 'TIME 2 (JOGADOR 2)' : 'TIME 2 (CPU)';
+  document.getElementById('ts-title').textContent = Session.mode==='2p' ? 'SELECIONE OS TIMES — 2 JOGADORES' : 'SELECIONE OS TIMES';
+  document.getElementById('difficulty-panel').style.display = Session.mode==='2p' ? 'none' : 'block';
+  document.querySelectorAll('#team-grid .team-card').forEach(c=>{
+    c.classList.toggle('picked1', c.dataset.id===Session.team1.id);
+    c.classList.toggle('picked2', c.dataset.id===Session.team2.id);
+  });
+}
+function openTeamSelect(){
+  Session.focusedSlot=1;
+  refreshTeamSelectUI();
+  UI.show('team-select');
+}
+
+document.querySelectorAll('#difficulty-pills .pill').forEach(p=>{
+  p.addEventListener('click',()=>{
+    document.querySelectorAll('#difficulty-pills .pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); Session.difficulty = p.dataset.diff; AudioSys.menuClick();
+  });
+});
+document.querySelectorAll('#duration-pills .pill').forEach(p=>{
+  p.addEventListener('click',()=>{
+    document.querySelectorAll('#duration-pills .pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); Session.duration = parseInt(p.dataset.dur,10); AudioSys.menuClick();
+  });
+});
+document.getElementById('btn-play-match').addEventListener('click',()=>{
+  AudioSys.ensure();
+  Match.start();
+});
+
+/* Settings screen wiring */
+const volSlider = document.getElementById('opt-volume');
+volSlider.value = Settings.volume;
+volSlider.addEventListener('input',()=>{ Settings.volume=+volSlider.value; AudioSys.setVolume(Settings.volume/100); Settings.save(); });
+document.querySelectorAll('[data-toggle]').forEach(p=>{
+  if((p.dataset.toggle==='music' && (Settings.music? p.dataset.val==='on':p.dataset.val==='off')) ||
+     (p.dataset.toggle==='sfx' && (Settings.sfx? p.dataset.val==='on':p.dataset.val==='off'))){
+    p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+  }
+  p.addEventListener('click',()=>{
+    p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    const on = p.dataset.val==='on';
+    if(p.dataset.toggle==='music'){ Settings.music=on; AudioSys.setMusicEnabled(on); }
+    if(p.dataset.toggle==='sfx'){ Settings.sfx=on; AudioSys.setSfxEnabled(on); }
+    Settings.save(); AudioSys.menuClick();
+  });
+});
+document.querySelectorAll('#opt-difficulty-pills .pill').forEach(p=>{
+  if(p.dataset.diff===Settings.difficulty){ p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); }
+  p.addEventListener('click',()=>{
+    p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); Settings.difficulty=p.dataset.diff; Settings.save();
+    document.querySelectorAll('#difficulty-pills .pill').forEach(x=>{x.classList.toggle('active',x.dataset.diff===Settings.difficulty);});
+    Session.difficulty = Settings.difficulty; AudioSys.menuClick();
+  });
+});
+document.querySelectorAll('#opt-duration-pills .pill').forEach(p=>{
+  if(parseInt(p.dataset.dur,10)===Settings.duration){ p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); }
+  p.addEventListener('click',()=>{
+    p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); Settings.duration=parseInt(p.dataset.dur,10); Settings.save();
+    document.querySelectorAll('#duration-pills .pill').forEach(x=>{x.classList.toggle('active',parseInt(x.dataset.dur,10)===Settings.duration);});
+    Session.duration = Settings.duration; AudioSys.menuClick();
+  });
+});
+AudioSys.setVolume(Settings.volume/100);
+
+/* =========================================================================
+   7. INPUT SYSTEM (keyboard + touch)
+   ========================================================================= */
+const Input = {
+  keys:{},
+  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false},
+  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false},
+};
+window.addEventListener('keydown', e=>{ Input.keys[e.code]=true; if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault(); });
+window.addEventListener('keyup', e=>{ Input.keys[e.code]=false; });
+
+// Edge-detection for the "kick" button is centralized here, once per frame, so that
+// keyboard and touch sources can both drive the same player without clobbering each other.
+function pollKeyboard(){
+  const k=Input.keys;
+  let x=0,y=0;
+  if(k['KeyA'])x-=1; if(k['KeyD'])x+=1; if(k['KeyW'])y-=1; if(k['KeyS'])y+=1;
+  Input.p1.x=x; Input.p1.y=y;
+  Input.p1.keyKick = !!k['Space'];
+  const combined1 = Input.p1.keyKick || Input.p1.touchKick;
+  Input.p1.kickJustReleased = Input.p1.prevKick && !combined1;
+  Input.p1.kick = combined1;
+  Input.p1.prevKick = combined1;
+
+  let x2=0,y2=0;
+  if(k['ArrowLeft'])x2-=1; if(k['ArrowRight'])x2+=1; if(k['ArrowUp'])y2-=1; if(k['ArrowDown'])y2+=1;
+  if(!Input.touchP2Active){ Input.p2.x=x2; Input.p2.y=y2; }
+  Input.p2.keyKick = !!k['Enter'];
+  const combined2 = Input.p2.keyKick || Input.p2.touchKick;
+  Input.p2.kickJustReleased = Input.p2.prevKick && !combined2;
+  Input.p2.kick = combined2;
+  Input.p2.prevKick = combined2;
+}
+
+/* Touch joysticks */
+function setupJoystick(zoneId, stickId, player){
+  const zone=document.getElementById(zoneId), stick=document.getElementById(stickId);
+  let active=false, cx=0, cy=0, id=null;
+  const maxR=40;
+  function start(e){
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    const rect = zone.getBoundingClientRect();
+    cx = rect.left+rect.width/2; cy = rect.top+rect.height/2;
+    id = e.changedTouches ? t.identifier : 'mouse';
+    active=true;
+    move(e);
+  }
+  function move(e){
+    if(!active) return;
+    let t = e.changedTouches ? [...e.changedTouches].find(tt=>tt.identifier===id) : e;
+    if(!t) return;
+    let dx=t.clientX-cx, dy=t.clientY-cy;
+    const dist=Math.hypot(dx,dy);
+    if(dist>maxR){ dx=dx/dist*maxR; dy=dy/dist*maxR; }
+    stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    const nx = dist>6 ? dx/maxR : 0, ny = dist>6 ? dy/maxR : 0;
+    player.x = Math.max(-1,Math.min(1,nx)); player.y = Math.max(-1,Math.min(1,ny));
+  }
+  function end(e){
+    if(e.changedTouches){ const t=[...e.changedTouches].find(tt=>tt.identifier===id); if(!t) return; }
+    active=false; stick.style.transform='translate(-50%,-50%)'; player.x=0; player.y=0;
+  }
+  zone.addEventListener('touchstart', start, {passive:true});
+  zone.addEventListener('touchmove', move, {passive:true});
+  zone.addEventListener('touchend', end);
+  zone.addEventListener('touchcancel', end);
+}
+setupJoystick('joy1','joy1-stick',Input.p1);
+setupJoystick('joy2','joy2-stick',Input.p2);
+
+function setupKickButton(btnId, player, isP2){
+  const btn=document.getElementById(btnId);
+  function start(e){ e.preventDefault(); player.touchKick=true; if(isP2) Input.touchP2Active=true; }
+  function end(e){ e.preventDefault(); player.touchKick=false; if(isP2) Input.touchP2Active=true; }
+  btn.addEventListener('touchstart', start, {passive:false});
+  btn.addEventListener('touchend', end, {passive:false});
+  btn.addEventListener('touchcancel', end, {passive:false});
+  btn.addEventListener('mousedown', start);
+  window.addEventListener('mouseup', ()=>{ player.touchKick=false; });
+}
+setupKickButton('kick1',Input.p1,false);
+setupKickButton('kick2',Input.p2,true);
+
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+if(isTouchDevice){
+  document.getElementById('joy1').style.display='block';
+  document.getElementById('kick1').style.display='flex';
+}
+
+/* =========================================================================
+   8. ENTITIES
+   ========================================================================= */
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+class Ball {
+  constructor(){ this.reset(); }
+  reset(){ this.x=FW/2; this.y=FH/2; this.vx=0; this.vy=0; this.spin=0; }
+  update(dt){
+    this.x += this.vx*dt; this.y += this.vy*dt;
+    this.vx *= Math.pow(0.72, dt*3);
+    this.vy *= Math.pow(0.72, dt*3);
+    this.spin = Math.hypot(this.vx,this.vy)*0.04;
+    // vertical walls
+    if(this.y < WALL_Y_TOP+BALL_R){ this.y=WALL_Y_TOP+BALL_R; this.vy*=-0.65; AudioSys.bounce(); }
+    if(this.y > WALL_Y_BOT-BALL_R){ this.y=WALL_Y_BOT-BALL_R; this.vy*=-0.65; AudioSys.bounce(); }
+    // side walls (unless within goal mouth)
+    const inGoalY = this.y > FH/2-GOAL_HALF && this.y < FH/2+GOAL_HALF;
+    if(this.x < BALL_R && !inGoalY){ this.x=BALL_R; this.vx*=-0.65; AudioSys.bounce(); }
+    if(this.x > FW-BALL_R && !inGoalY){ this.x=FW-BALL_R; this.vx*=-0.65; AudioSys.bounce(); }
+    if(inGoalY){
+      if(this.x < -GOAL_DEPTH+BALL_R){ this.x=-GOAL_DEPTH+BALL_R; this.vx*=-0.4; }
+      if(this.x > FW+GOAL_DEPTH-BALL_R){ this.x=FW+GOAL_DEPTH-BALL_R; this.vx*=-0.4; }
+    }
+  }
+  speed(){ return Math.hypot(this.vx,this.vy); }
+}
+
+class Player {
+  constructor(team, side, role, control){
+    this.team=team; this.side=side; this.role=role; // role: 'gk' | 'field1' | 'field2'
+    this.control=control; // 'human1' | 'human2' | 'ai' | 'gk-ai' | 'support-ai'
+    this.x=0; this.y=0; this.vx=0; this.vy=0;
+    this.facing = side==='left'? 1:-1;
+    this.runPhase = Math.random()*10;
+    this.kickCharge = 0; this.isCharging=false;
+    this.kickAnim = 0;
+    this.homeX=0; this.homeY=0;
+  }
+  speedMul(){ return 0.82 + this.team.spd*0.062; }
+  kickMul(){ return 0.8 + this.team.atk*0.07; }
+  update(dt, moveX, moveY, wantKickCharge, wantKickRelease, ball){
+    const mag = Math.hypot(moveX,moveY);
+    const baseSpeed = 168 * this.speedMul();
+    if(mag>0.05){
+      this.vx = (moveX/Math.max(mag,1))*baseSpeed;
+      this.vy = (moveY/Math.max(mag,1))*baseSpeed;
+      this.facing = moveX>0.1?1:(moveX<-0.1?-1:this.facing);
+      this.runPhase += dt*8*Math.min(1,mag);
+    } else {
+      this.vx *= 0.001; this.vy *= 0.001;
+    }
+    this.x += this.vx*dt; this.y += this.vy*dt;
+    this.x = clamp(this.x, PLAYER_R, FW-PLAYER_R);
+    this.y = clamp(this.y, WALL_Y_TOP+PLAYER_R*0.4, WALL_Y_BOT-PLAYER_R*0.4);
+
+    if(wantKickCharge){ this.isCharging=true; this.kickCharge=Math.min(1,this.kickCharge+dt*1.6); }
+    if(wantKickRelease && this.isCharging){
+      this.tryKick(ball, Math.max(0.22,this.kickCharge));
+      this.isCharging=false; this.kickCharge=0;
+    }
+    if(!wantKickCharge && !wantKickRelease) { if(!this.isCharging) this.kickCharge=0; }
+    if(this.kickAnim>0) this.kickAnim=Math.max(0,this.kickAnim-dt*4);
+  }
+  tryKick(ball, power){
+    const d = Math.hypot(ball.x-this.x, ball.y-this.y);
+    if(d < PLAYER_R + BALL_R + 20){
+      let dx = ball.x-this.x, dy = ball.y-this.y;
+      const dist = Math.max(1,Math.hypot(dx,dy));
+      dx/=dist; dy/=dist;
+      // blend aim between direction-to-ball and player's movement facing for control
+      let aimX = dx, aimY = dy;
+      if(Math.hypot(this.vx,this.vy) > 30){
+        const mvx=this.vx/Math.max(1,Math.hypot(this.vx,this.vy)), mvy=this.vy/Math.max(1,Math.hypot(this.vx,this.vy));
+        aimX = dx*0.55+mvx*0.45; aimY = dy*0.55+mvy*0.45;
+        const an=Math.max(0.001,Math.hypot(aimX,aimY)); aimX/=an; aimY/=an;
+      }
+      const power2 = power*this.kickMul();
+      const speed = 260 + power2*560;
+      ball.vx += aimX*speed; ball.vy += aimY*speed - 40*power2;
+      this.kickAnim = 1;
+      AudioSys.kick(power2);
+    }
+  }
+}
+
+/* =========================================================================
+   9. AI SYSTEM
+   ========================================================================= */
+const DIFF = {
+  facil:   {speed:0.78, reaction:0.55, aggression:0.55, err:0.24},
+  normal:  {speed:0.94, reaction:0.75, aggression:0.75, err:0.13},
+  dificil: {speed:1.08, reaction:0.95, aggression:0.95, err:0.05},
+};
+
+function aiFieldPlayer(p, ball, diffKey, teammates, opponents, goalX, ownGoalX){
+  const d = DIFF[diffKey]||DIFF.normal;
+  const distToBall = Math.hypot(ball.x-p.x, ball.y-p.y);
+  const errX = (Math.random()-0.5)*80*(d.err);
+  const errY = (Math.random()-0.5)*80*(d.err);
+  let targetX, targetY, wantKick=false, wantRelease=false;
+
+  const ballComingToGoal = Math.sign(ball.vx) === Math.sign(ownGoalX-p.x) && Math.abs(ball.vx) > 40;
+  const shouldChase = distToBall < 260*d.aggression + 60 || Math.random()<0.02;
+
+  if(shouldChase){
+    targetX = ball.x + errX*0.3; targetY = ball.y + errY*0.3;
+  } else {
+    // hold strategic position between ball and own goal, biased toward attack
+    targetX = lerp(p.homeX, ball.x, 0.35) + errX;
+    targetY = lerp(p.homeY, ball.y, 0.45) + errY;
+  }
+  const dx=targetX-p.x, dy=targetY-p.y;
+  const dist=Math.max(1,Math.hypot(dx,dy));
+  let mx=dx/dist, my=dy/dist;
+  const speedScale = d.speed;
+  mx*=speedScale; my*=speedScale;
+
+  if(distToBall < 60){
+    wantKick=true;
+    if(Math.random() < 0.06 + d.reaction*0.02) wantRelease=true;
+  }
+  return {mx,my,wantKick,wantRelease};
+}
+
+function aiGoalkeeper(p, ball, goalLineX, side){
+  const targetY = clamp(ball.y, FH/2-GOAL_HALF+14, FH/2+GOAL_HALF-14);
+  let targetX = goalLineX + (side==='left'? 26:-26);
+  const closeBall = Math.hypot(ball.x-goalLineX, 0) < 150;
+  if(closeBall){ targetX += (side==='left'?1:-1) * clamp((150-Math.hypot(ball.x-goalLineX,0))*0.25,0,40); }
+  const dx=targetX-p.x, dy=targetY-p.y;
+  const dist=Math.max(1,Math.hypot(dx,dy));
+  let mx=dx/dist*0.8, my=dy/dist*0.9;
+  let wantKick=false, wantRelease=false;
+  const distToBall = Math.hypot(ball.x-p.x, ball.y-p.y);
+  if(distToBall < 55){ wantKick=true; wantRelease = Math.random()<0.35; }
+  return {mx,my,wantKick,wantRelease};
+}
+
+/* =========================================================================
+   10. MATCH / GAME LOGIC
+   ========================================================================= */
+const Match = {
+  canvas:null, ctx:null,
+  ball:null, players:[],
+  running:false, paused:false,
+  timeLeft:120, matchDuration:120,
+  score1:0, score2:0,
+  state:'idle', // idle, countdown, playing, goal, over
+  stateTimer:0,
+  lastGoalTeam:null,
+  raf:null, lastTs:0,
+
+  init(){
+    this.canvas = document.getElementById('field-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    window.addEventListener('resize', ()=>this.resize());
+    this.resize();
+    document.getElementById('pause-btn').addEventListener('click', ()=>this.togglePause());
+    document.getElementById('btn-resume').addEventListener('click', ()=>this.togglePause());
+    document.getElementById('btn-restart-match').addEventListener('click', ()=>{ UI.show('match'); this.start(true); });
+    document.getElementById('btn-play-again').addEventListener('click', ()=>{ this.start(true); });
+    document.getElementById('btn-choose-teams').addEventListener('click', ()=>{ openTeamSelect(); });
+  },
+  resize(){
+    const stage = document.getElementById('match-stage');
+    const w = stage.clientWidth, h = stage.clientHeight;
+    const dpr = Math.min(2, window.devicePixelRatio||1);
+    this.canvas.width = w*dpr; this.canvas.height = h*dpr;
+    this.canvas.style.width = w+'px'; this.canvas.style.height = h+'px';
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.viewW = w; this.viewH = h;
+    const scale = Math.min(w/(FW+GOAL_DEPTH*2+40), h/(FH+40));
+    this.scale = scale;
+    this.offX = w/2 - (FW/2)*scale;
+    this.offY = h/2 - (FH/2)*scale;
+  },
+  worldToScreen(x,y){ return [this.offX+x*this.scale, this.offY+y*this.scale]; },
+
+  buildTeams(){
+    const team1=Session.team1, team2=Session.team2;
+    const mode = Session.mode;
+    this.players = [];
+    // Team 1 (left side) — outfield1 is human1 always
+    const t1f1 = new Player(team1,'left','field1', 'human1');
+    const t1f2 = new Player(team1,'left','field2', 'support-ai');
+    const t1gk = new Player(team1,'left','gk', 'gk-ai');
+    // Team 2 (right side)
+    const t2f1 = new Player(team2,'right','field1', mode==='2p' ? 'human2' : 'ai');
+    const t2f2 = new Player(team2,'right','field2', 'support-ai');
+    const t2gk = new Player(team2,'right','gk', 'gk-ai');
+    this.players.push(t1f1,t1f2,t1gk,t2f1,t2f2,t2gk);
+    this.resetPositions();
+  },
+  resetPositions(){
+    this.players.forEach(p=>{
+      const isLeft = p.side==='left';
+      if(p.role==='gk'){ p.homeX = isLeft? 40 : FW-40; p.homeY=FH/2; }
+      else if(p.role==='field1'){ p.homeX = isLeft? FW*0.34 : FW*0.66; p.homeY=FH*0.42; }
+      else { p.homeX = isLeft? FW*0.30 : FW*0.70; p.homeY=FH*0.62; }
+      p.x=p.homeX; p.y=p.homeY; p.vx=0; p.vy=0; p.kickCharge=0; p.isCharging=false;
+    });
+    this.ball.reset();
+  },
+  applyGoalkeeperTag(){}, // reserved
+
+  start(reuse){
+    if(!this.ball) this.ball = new Ball();
+    this.buildTeams();
+    this.score1=0; this.score2=0;
+    this.matchDuration = Session.duration;
+    this.timeLeft = this.matchDuration;
+    updateScoreboardNames();
+    document.getElementById('joy2').style.display = Session.mode==='2p' && isTouchDevice ? 'block' : 'none';
+    document.getElementById('kick2').style.display = Session.mode==='2p' && isTouchDevice ? 'flex' : 'none';
+    if(!isTouchDevice){ document.getElementById('joy1').style.display='none'; document.getElementById('kick1').style.display='none'; }
+    UI.show('match');
+    this.resize();
+    this.paused=false;
+    this.enterCountdown(true);
+    if(!this.running){ this.running=true; this.lastTs=performance.now(); this.loop(this.lastTs); }
+  },
+  hardStop(){ this.running=false; if(this.raf) cancelAnimationFrame(this.raf); this.state='idle'; },
+  togglePause(){
+    if(this.state==='over') return;
+    this.paused = !this.paused;
+    if(this.paused){ UI.show('pause'); } else { UI.show('match'); this.lastTs=performance.now(); }
+  },
+
+  enterCountdown(initial){
+    this.state='countdown';
+    this.stateTimer = 3.0;
+    this._countInitial = initial;
+    AudioSys.whistle();
+  },
+  enterGoal(scoredBySide){
+    this.state='goal';
+    this.stateTimer = 2.0;
+    this.lastGoalTeam = scoredBySide;
+    if(scoredBySide==='left'){ this.score1++; } else { this.score2++; }
+    document.getElementById('sb-score1').textContent=this.score1;
+    document.getElementById('sb-score2').textContent=this.score2;
+    AudioSys.goalFanfare();
+    const teamName = scoredBySide==='left'? Session.team1.name : Session.team2.name;
+    showCenterOverlay(`<div class="overlay-text overlay-goal">GOOOL!</div><div class="overlay-sub">${teamName}</div>`);
+  },
+  enterOver(){
+    this.state='over';
+    AudioSys.whistle();
+    const winner = this.score1===this.score2 ? null : (this.score1>this.score2 ? 'left':'right');
+    document.getElementById('go-dot1').style.background = Session.team1.primary;
+    document.getElementById('go-dot2').style.background = Session.team2.primary;
+    document.getElementById('go-name1').textContent = Session.team1.name;
+    document.getElementById('go-name2').textContent = Session.team2.name;
+    document.getElementById('go-score1').textContent = this.score1;
+    document.getElementById('go-score2').textContent = this.score2;
+    const title = document.getElementById('go-title'), trophy=document.getElementById('go-trophy');
+    if(winner===null){ title.textContent='EMPATE'; trophy.textContent='🤝'; }
+    else{
+      const wname = winner==='left'? Session.team1.name : Session.team2.name;
+      title.textContent = (Session.mode==='cpu' && winner==='right') ? 'VOCÊ PERDEU...' : `🏆 ${wname} VENCEU!`;
+      trophy.textContent = (Session.mode==='cpu' && winner==='right') ? '😔' : '🏆';
+    }
+    setTimeout(()=>{ UI.show('gameover'); }, 900);
+  },
+
+  loop(ts){
+    if(!this.running) return;
+    this.raf = requestAnimationFrame(t=>this.loop(t));
+    let dt = (ts-this.lastTs)/1000; this.lastTs=ts;
+    dt = Math.min(dt, 0.033);
+    if(!this.paused && UI.screens['screen-match'].classList.contains('active')){
+      this.update(dt);
+    }
+    this.render();
+  },
+  update(dt){
+    pollKeyboard();
+    if(this.state==='countdown'){
+      this.stateTimer -= dt;
+      const n = Math.ceil(this.stateTimer);
+      showCenterOverlay(this.stateTimer>0
+        ? `<div class="overlay-text overlay-countdown">${n}</div>`
+        : `<div class="overlay-text overlay-countdown" style="font-size:min(12vw,80px);">VAI!</div>`);
+      if(this.stateTimer<=0){
+        if(this.stateTimer > -0.5){ AudioSys.countBeep(true); }
+      }
+      if(this.stateTimer <= -0.6){ this.state='playing'; clearCenterOverlay(); }
+      else if(Math.ceil(this.stateTimer+dt) !== Math.ceil(this.stateTimer) && this.stateTimer>0){ AudioSys.countBeep(false); }
+      return;
+    }
+    if(this.state==='goal'){
+      this.stateTimer -= dt;
+      if(this.stateTimer<=0){
+        clearCenterOverlay();
+        this.resetPositions();
+        this.enterCountdown(false);
+      }
+      return;
+    }
+    if(this.state==='over'){ return; }
+    if(this.state!=='playing') return;
+
+    this.timeLeft -= dt;
+    if(this.timeLeft<=0){ this.timeLeft=0; this.enterOver(); }
+    document.getElementById('sb-timer').textContent = formatTime(this.timeLeft);
+
+    // control mapping per player
+    for(const p of this.players){
+      let mx=0,my=0,wKick=false,wRelease=false;
+      if(p.control==='human1'){
+        mx=Input.p1.x; my=Input.p1.y; wKick=Input.p1.kick; wRelease=Input.p1.kickJustReleased;
+      } else if(p.control==='human2'){
+        mx=Input.p2.x; my=Input.p2.y; wKick=Input.p2.kick; wRelease=Input.p2.kickJustReleased;
+      } else if(p.control==='ai'){
+        const goalX = p.side==='left'? FW : 0;
+        const ownGoalX = p.side==='left'? 0 : FW;
+        const r = aiFieldPlayer(p, this.ball, Session.difficulty, [], [], goalX, ownGoalX);
+        mx=r.mx; my=r.my; wKick=r.wantKick; wRelease=r.wantRelease;
+      } else if(p.control==='support-ai'){
+        const goalX = p.side==='left'? FW : 0;
+        const ownGoalX = p.side==='left'? 0 : FW;
+        const r = aiFieldPlayer(p, this.ball, 'normal', [], [], goalX, ownGoalX);
+        mx=r.mx*0.85; my=r.my*0.85; wKick=r.wantKick; wRelease=r.wantRelease;
+      } else if(p.control==='gk-ai'){
+        const goalLineX = p.side==='left'? 8 : FW-8;
+        const r = aiGoalkeeper(p, this.ball, goalLineX, p.side);
+        mx=r.mx; my=r.my; wKick=r.wantKick; wRelease=r.wantRelease;
+      }
+      p.update(dt, mx, my, wKick, wRelease, this.ball);
+    }
+    Input.p1.kickJustReleased=false; Input.p2.kickJustReleased=false;
+
+    // player-player collisions (soft push apart)
+    for(let i=0;i<this.players.length;i++){
+      for(let j=i+1;j<this.players.length;j++){
+        const a=this.players[i], b=this.players[j];
+        const dx=b.x-a.x, dy=b.y-a.y; const dist=Math.hypot(dx,dy);
+        const minD = PLAYER_R*1.7;
+        if(dist>0 && dist<minD){
+          const push=(minD-dist)/2;
+          const nx=dx/dist, ny=dy/dist;
+          a.x-=nx*push; a.y-=ny*push; b.x+=nx*push; b.y+=ny*push;
+        }
+      }
+    }
+    // player-ball soft push (dribble contact) — only when not an active kick this frame
+    for(const p of this.players){
+      const dx=this.ball.x-p.x, dy=this.ball.y-p.y; const dist=Math.hypot(dx,dy);
+      const minD = PLAYER_R+BALL_R+2;
+      if(dist>0 && dist<minD){
+        const nx=dx/dist, ny=dy/dist;
+        const push=(minD-dist);
+        this.ball.x += nx*push; this.ball.y += ny*push;
+        const pSpeed = Math.hypot(p.vx,p.vy);
+        this.ball.vx += nx*pSpeed*0.5*dt*10;
+        this.ball.vy += ny*pSpeed*0.5*dt*10;
+      }
+    }
+
+    this.ball.update(dt);
+
+    // goal detection
+    const inGoalY = this.ball.y > FH/2-GOAL_HALF+4 && this.ball.y < FH/2+GOAL_HALF-4;
+    if(inGoalY && this.ball.x < -GOAL_DEPTH+BALL_R+2){ this.enterGoal('right'); }
+    else if(inGoalY && this.ball.x > FW+GOAL_DEPTH-BALL_R-2){ this.enterGoal('left'); }
+
+    // power bar UI
+    updatePowerUI();
+  },
+
+  render(){
+    const ctx=this.ctx;
+    ctx.clearRect(0,0,this.viewW,this.viewH);
+    drawField(ctx, this);
+    if(this.ball){
+      const sorted = [...this.players].sort((a,b)=>a.y-b.y);
+      const drawBallAt = () => drawBall(ctx, this, this.ball);
+      let ballDrawn=false;
+      for(const p of sorted){
+        if(!ballDrawn && p.y > this.ball.y){ drawBallAt(); ballDrawn=true; }
+        drawPlayer(ctx, this, p);
+      }
+      if(!ballDrawn) drawBallAt();
+    }
+  }
+};
+
+function formatTime(t){
+  t=Math.max(0,t);
+  const m=Math.floor(t/60), s=Math.floor(t%60);
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateScoreboardNames(){
+  document.getElementById('sb-name1').textContent = Session.team1.name.toUpperCase();
+  document.getElementById('sb-name2').textContent = Session.team2.name.toUpperCase();
+  document.getElementById('sb-dot1').style.background = Session.team1.primary;
+  document.getElementById('sb-dot2').style.background = Session.team2.primary;
+  document.getElementById('sb-score1').textContent='0';
+  document.getElementById('sb-score2').textContent='0';
+  document.getElementById('sb-mode').textContent = Session.mode==='2p' ? '2 JOGADORES' : Session.difficulty.toUpperCase();
+  document.getElementById('sb-timer').textContent = formatTime(Session.duration);
+}
+function showCenterOverlay(html){ document.getElementById('center-overlay').innerHTML = html; }
+function clearCenterOverlay(){ document.getElementById('center-overlay').innerHTML=''; }
+function updatePowerUI(){
+  const p1 = Match.players.find(p=>p.control==='human1');
+  const p2 = Match.players.find(p=>p.control==='human2');
+  const w1=document.getElementById('power1'), f1=document.getElementById('power1-fill');
+  const w2=document.getElementById('power2'), f2=document.getElementById('power2-fill');
+  if(p1){ w1.classList.toggle('show', p1.isCharging); f1.style.width=(p1.kickCharge*100)+'%'; }
+  if(p2 && Session.mode==='2p'){ w2.classList.toggle('show', p2.isCharging); f2.style.width=(p2.kickCharge*100)+'%'; } else { w2.classList.remove('show'); }
+}
+
+/* =========================================================================
+   11. RENDERING
+   ========================================================================= */
+function drawField(ctx, M){
+  const [x0,y0] = M.worldToScreen(0,0);
+  const [x1,y1] = M.worldToScreen(FW,FH);
+  // grass stripes
+  const stripeCount = 12;
+  for(let i=0;i<stripeCount;i++){
+    ctx.fillStyle = i%2===0 ? '#2fae5a' : '#38c76a';
+    const sx0 = x0 + (x1-x0)*(i/stripeCount);
+    const sx1 = x0 + (x1-x0)*((i+1)/stripeCount);
+    ctx.fillRect(sx0,y0,sx1-sx0,y1-y0);
+  }
+  ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(2,3*M.scale);
+  ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+  // center line & circle
+  ctx.beginPath(); ctx.moveTo((x0+x1)/2,y0); ctx.lineTo((x0+x1)/2,y1); ctx.stroke();
+  ctx.beginPath(); ctx.arc((x0+x1)/2,(y0+y1)/2, 60*M.scale, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc((x0+x1)/2,(y0+y1)/2, 3*M.scale, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  // goal areas (penalty box)
+  [0,1].forEach(side=>{
+    const gx = side===0? 0 : FW;
+    const boxW = 120, boxH = 260;
+    const bx0 = side===0? 0 : FW-boxW;
+    const by0 = FH/2-boxH/2;
+    const [sx0,sy0]=M.worldToScreen(bx0,by0);
+    const [sx1,sy1]=M.worldToScreen(bx0+boxW,by0+boxH);
+    ctx.strokeRect(sx0,sy0,sx1-sx0,sy1-sy0);
+  });
+  // goals (posts + net)
+  drawGoal(ctx, M, 'left');
+  drawGoal(ctx, M, 'right');
+}
+function drawGoal(ctx, M, side){
+  const gx = side==='left'? 0 : FW;
+  const dir = side==='left'? -1 : 1;
+  const [px0,py0] = M.worldToScreen(gx, FH/2-GOAL_HALF);
+  const [px1,py1] = M.worldToScreen(gx + dir*GOAL_DEPTH, FH/2-GOAL_HALF);
+  const [px2,py2] = M.worldToScreen(gx + dir*GOAL_DEPTH, FH/2+GOAL_HALF);
+  const [px3,py3] = M.worldToScreen(gx, FH/2+GOAL_HALF);
+  // net pattern
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  const rows=8, cols=6;
+  for(let i=0;i<=cols;i++){
+    const t=i/cols;
+    const ax=lerp(px0,px1,t), ay=lerp(py0,py1,t);
+    const bx=lerp(px3,px2,t), by=lerp(py3,py2,t);
+    ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+  }
+  for(let i=0;i<=rows;i++){
+    const t=i/rows;
+    const ax=lerp(px0,px3,t), ay=lerp(py0,py3,t);
+    const bx=lerp(px1,px2,t), by=lerp(py1,py2,t);
+    ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+  }
+  ctx.stroke();
+  ctx.restore();
+  // posts
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=Math.max(3,5*M.scale);
+  ctx.beginPath();
+  ctx.moveTo(px0,py0); ctx.lineTo(px1,py1); ctx.lineTo(px2,py2); ctx.lineTo(px3,py3);
+  ctx.stroke();
+}
+function drawBall(ctx, M, ball){
+  const [x,y] = M.worldToScreen(ball.x, ball.y);
+  const r = BALL_R*M.scale;
+  // shadow
+  ctx.beginPath(); ctx.ellipse(x, y+r*0.9, r*1.1, r*0.4, 0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fill();
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate((ball.x+ball.y)*0.01);
+  const grad = ctx.createRadialGradient(-r*0.3,-r*0.3,r*0.1,0,0,r);
+  grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#cfd4de');
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
+  ctx.strokeStyle='#333'; ctx.lineWidth=Math.max(1,r*0.12); ctx.stroke();
+  ctx.fillStyle='#333';
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2;
+    ctx.beginPath(); ctx.arc(Math.cos(a)*r*0.45, Math.sin(a)*r*0.45, r*0.16, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawPlayer(ctx, M, p){
+  const [x,y] = M.worldToScreen(p.x,p.y);
+  const s = M.scale;
+  const speed = Math.hypot(p.vx,p.vy);
+  const legSwing = Math.sin(p.runPhase)*(Math.min(1,speed/150))*16*s;
+  // shadow
+  ctx.beginPath(); ctx.ellipse(x, y+30*s, 20*s, 7*s, 0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fill();
+  ctx.save();
+  ctx.translate(x,y);
+  const faceDir = p.facing>=0?1:-1;
+  ctx.scale(faceDir,1);
+  // legs
+  ctx.strokeStyle = '#222'; ctx.lineWidth=Math.max(3,6*s); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-4*s,10*s); ctx.lineTo(-4*s+legSwing*0.6, 26*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4*s,10*s); ctx.lineTo(4*s-legSwing*0.6, 26*s); ctx.stroke();
+  // cleats
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(-4*s+legSwing*0.6, 27*s, 5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(4*s-legSwing*0.6, 27*s, 5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  // body (jersey)
+  ctx.fillStyle = p.team.primary;
+  ctx.beginPath();
+  ctx.moveTo(-12*s,-2*s);
+  ctx.quadraticCurveTo(0,-10*s,12*s,-2*s);
+  ctx.lineTo(9*s,12*s);
+  ctx.quadraticCurveTo(0,16*s,-9*s,12*s);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=p.team.secondary; ctx.lineWidth=Math.max(2,3*s); ctx.stroke();
+  // arms
+  const kickSwing = p.kickAnim>0 ? p.kickAnim*18*s : 0;
+  ctx.strokeStyle=p.team.primary; ctx.lineWidth=Math.max(3,5*s); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-9*s,0); ctx.lineTo(-15*s-kickSwing*0.3, 8*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9*s,0); ctx.lineTo(15*s+kickSwing*0.3, 8*s); ctx.stroke();
+  // head (big, cartoon)
+  ctx.beginPath(); ctx.arc(0,-16*s, 13*s, 0, Math.PI*2);
+  ctx.fillStyle='#f2c095'; ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.lineWidth=1; ctx.stroke();
+  // hair/cap using team secondary
+  ctx.fillStyle=p.team.secondary;
+  ctx.beginPath(); ctx.arc(0,-19*s,13*s, Math.PI, Math.PI*2); ctx.fill();
+  // eyes
+  ctx.fillStyle='#222';
+  ctx.beginPath(); ctx.arc(5*s,-16*s,1.6*s,0,Math.PI*2); ctx.fill();
+  // GK marker (gloves)
+  if(p.role==='gk'){
+    ctx.fillStyle='#ffd23f';
+    ctx.beginPath(); ctx.arc(-15*s-kickSwing*0.3,8*s,4*s,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(15*s+kickSwing*0.3,8*s,4*s,0,Math.PI*2); ctx.fill();
+  }
+  // charging power ring for human players (context is already mirrored per-player above;
+  // the ring is a centered circle so the mirror doesn't affect its shape)
+  if(p.isCharging){
+    ctx.beginPath();
+    ctx.strokeStyle='rgba(255,210,63,.9)'; ctx.lineWidth=3*s;
+    ctx.arc(0,-2*s, 24*s, -Math.PI/2, -Math.PI/2 + Math.PI*2*p.kickCharge);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* =========================================================================
+   12. BOOT
+   ========================================================================= */
+Match.init();
+document.getElementById('sb-timer').textContent = formatTime(Settings.duration);
+
+// keep canvas correctly sized when orientation / resize happens
+window.addEventListener('orientationchange', ()=>setTimeout(()=>Match.resize(),200));
+window.addEventListener('resize', ()=>Match.resize());
+
+// resume audio context on first user gesture (autoplay policies)
+window.addEventListener('pointerdown', ()=>AudioSys.ensure(), {once:true});
+window.addEventListener('keydown', ()=>AudioSys.ensure(), {once:true});
+
+// start subtle menu ambience if enabled
+if(Settings.music){ document.addEventListener('pointerdown', ()=>AudioSys.setMusicEnabled(true), {once:true}); }
+if(!Settings.sfx){ document.addEventListener('pointerdown', ()=>AudioSys.setSfxEnabled(false), {once:true}); }
+</script>
+</body>
+</html>
