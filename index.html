@@ -207,21 +207,24 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
    TOUCH CONTROLS
    ========================================================================= */
 #touch-layer{position:absolute;inset:0;z-index:7;pointer-events:none;}
-.joy-zone{position:absolute;bottom:18px;width:130px;height:130px;pointer-events:auto;}
-.joy-zone.p1{left:16px;}
-.joy-zone.p2{right:16px;}
+.joy-zone{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:min(34vw,150px);height:min(34vw,150px);pointer-events:auto;touch-action:none;}
+.joy-zone.p1{left:calc(14px + env(safe-area-inset-left,0px));}
+.joy-zone.p2{right:calc(14px + env(safe-area-inset-right,0px));}
 .joy-base{position:absolute;inset:0;border-radius:50%;background:rgba(244,247,255,.12);border:2px solid rgba(244,247,255,.25);}
-.joy-stick{position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.55);
-  top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.8);}
+.joy-stick{position:absolute;width:44%;height:44%;border-radius:50%;background:rgba(255,255,255,.55);
+  top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.8);pointer-events:none;
+  transition:background-color .1s;}
+.joy-zone.active .joy-stick{background:rgba(255,210,63,.75);}
 .kick-btn{
-  position:absolute;bottom:32px;width:74px;height:74px;border-radius:50%;
+  position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:min(20vw,84px);height:min(20vw,84px);border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#ff8484,var(--coral));
   border:3px solid rgba(255,255,255,.5);color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px;
   display:flex;align-items:center;justify-content:center;pointer-events:auto;box-shadow:0 4px 10px rgba(0,0,0,.35);
+  touch-action:none;-webkit-tap-highlight-color:transparent;transition:transform .06s,filter .06s;
 }
-.kick-btn.p1{left:158px;}
-.kick-btn.p2{right:158px;}
-.kick-btn:active{transform:scale(.9);}
+.kick-btn.p1{left:calc(160px);}
+.kick-btn.p2{right:calc(160px);}
+.kick-btn:active,.kick-btn.pressed{transform:scale(.88);filter:brightness(1.18);}
 
 /* =========================================================================
    PAUSE / RESULT
@@ -472,11 +475,16 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
 
   <div id="orientation-warning" class="enabled">
     <div class="rotate-icon">📱</div>
-    <h2 style="font-size:22px;">Vire o dispositivo para jogar</h2>
+    <h2 style="font-size:22px;">VIRE O CELULAR PARA JOGAR ⚽</h2>
     <p class="small-note">O Super Football funciona melhor na horizontal.</p>
   </div>
 
 </div>
+
+<!-- Background music file slot: drop an authorized track at assets/audio/music.mp3
+     and the game will use it automatically (loops, respects volume/on-off).
+     Until that file exists, the game falls back to its built-in synthesized music. -->
+<audio id="bg-music" loop preload="none" style="display:none"></audio>
 
 <script>
 "use strict";
@@ -575,6 +583,59 @@ const AudioSys = (() => {
   }
   return {ensure,setVolume,setSfxEnabled,setMusicEnabled,kick,bounce,whistle,countBeep,menuClick,goalFanfare,
     get musicOn(){return musicOn;}};
+})();
+
+/* =========================================================================
+   2b. MUSIC FILE PLAYER (assets/audio/music.mp3)
+   ---------------------------------------------------------------------
+   Prefers a real licensed music file if present at assets/audio/music.mp3.
+   If the file is missing, fails to decode, or playback is blocked by the
+   browser's autoplay policy, it silently falls back to AudioSys's built-in
+   synthesized ambient loop so the game never breaks either way.
+   ========================================================================= */
+const MusicSys = (() => {
+  const SRC = 'assets/audio/music.mp3';
+  let el = null, wantOn = false, usingFile = false, triedFile = false;
+  function ensureEl(){
+    if(el) return;
+    el = document.getElementById('bg-music');
+    if(!el) return;
+    el.loop = true;
+    el.addEventListener('error', fallbackToSynth, {once:false});
+  }
+  function fallbackToSynth(){
+    if(!wantOn) return;
+    usingFile = false;
+    AudioSys.setMusicEnabled(true);
+  }
+  function applyVolume(){
+    if(el) el.volume = Math.max(0, Math.min(1, (Settings.volume/100)));
+  }
+  function play(){
+    wantOn = true;
+    ensureEl();
+    if(!el){ AudioSys.setMusicEnabled(true); return; }
+    if(!triedFile){
+      triedFile = true;
+      el.src = SRC;
+    }
+    applyVolume();
+    usingFile = true;
+    const p = el.play();
+    if(p && typeof p.catch==='function'){
+      p.catch(()=>{ fallbackToSynth(); });
+    }
+  }
+  function stop(){
+    wantOn = false;
+    if(el){ el.pause(); }
+    usingFile = false;
+    AudioSys.setMusicEnabled(false);
+  }
+  function setVolume(){
+    applyVolume();
+  }
+  return {play, stop, setVolume};
 })();
 
 /* =========================================================================
@@ -722,7 +783,7 @@ document.getElementById('btn-play-match').addEventListener('click',()=>{
 /* Settings screen wiring */
 const volSlider = document.getElementById('opt-volume');
 volSlider.value = Settings.volume;
-volSlider.addEventListener('input',()=>{ Settings.volume=+volSlider.value; AudioSys.setVolume(Settings.volume/100); Settings.save(); });
+volSlider.addEventListener('input',()=>{ Settings.volume=+volSlider.value; AudioSys.setVolume(Settings.volume/100); MusicSys.setVolume(); Settings.save(); });
 document.querySelectorAll('[data-toggle]').forEach(p=>{
   if((p.dataset.toggle==='music' && (Settings.music? p.dataset.val==='on':p.dataset.val==='off')) ||
      (p.dataset.toggle==='sfx' && (Settings.sfx? p.dataset.val==='on':p.dataset.val==='off'))){
@@ -733,7 +794,7 @@ document.querySelectorAll('[data-toggle]').forEach(p=>{
     p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
     p.classList.add('active');
     const on = p.dataset.val==='on';
-    if(p.dataset.toggle==='music'){ Settings.music=on; AudioSys.setMusicEnabled(on); }
+    if(p.dataset.toggle==='music'){ Settings.music=on; if(on) MusicSys.play(); else MusicSys.stop(); }
     if(p.dataset.toggle==='sfx'){ Settings.sfx=on; AudioSys.setSfxEnabled(on); }
     Settings.save(); AudioSys.menuClick();
   });
@@ -763,28 +824,41 @@ AudioSys.setVolume(Settings.volume/100);
    ========================================================================= */
 const Input = {
   keys:{},
-  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false},
-  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false},
+  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false},
+  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false},
 };
-window.addEventListener('keydown', e=>{ Input.keys[e.code]=true; if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault(); });
+window.addEventListener('keydown', e=>{
+  Input.keys[e.code]=true;
+  // Stop the page from scrolling on arrow keys / space while keeping every other key working.
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(e.code)) e.preventDefault();
+}, {passive:false});
 window.addEventListener('keyup', e=>{ Input.keys[e.code]=false; });
 
 // Edge-detection for the "kick" button is centralized here, once per frame, so that
 // keyboard and touch sources can both drive the same player without clobbering each other.
+// Each player's movement axis independently prefers touch (while a joystick is actively
+// held) over keyboard, and falls straight back to keyboard the instant the joystick is
+// released — so WASD and the arrow keys always keep working, and touch never gets
+// silently overwritten one frame after the finger moves.
 function pollKeyboard(){
   const k=Input.keys;
-  let x=0,y=0;
-  if(k['KeyA'])x-=1; if(k['KeyD'])x+=1; if(k['KeyW'])y-=1; if(k['KeyS'])y+=1;
-  Input.p1.x=x; Input.p1.y=y;
+
+  if(!Input.p1.touchActive){
+    let x=0,y=0;
+    if(k['KeyA'])x-=1; if(k['KeyD'])x+=1; if(k['KeyW'])y-=1; if(k['KeyS'])y+=1;
+    Input.p1.x=x; Input.p1.y=y;
+  }
   Input.p1.keyKick = !!k['Space'];
   const combined1 = Input.p1.keyKick || Input.p1.touchKick;
   Input.p1.kickJustReleased = Input.p1.prevKick && !combined1;
   Input.p1.kick = combined1;
   Input.p1.prevKick = combined1;
 
-  let x2=0,y2=0;
-  if(k['ArrowLeft'])x2-=1; if(k['ArrowRight'])x2+=1; if(k['ArrowUp'])y2-=1; if(k['ArrowDown'])y2+=1;
-  if(!Input.touchP2Active){ Input.p2.x=x2; Input.p2.y=y2; }
+  if(!Input.p2.touchActive){
+    let x2=0,y2=0;
+    if(k['ArrowLeft'])x2-=1; if(k['ArrowRight'])x2+=1; if(k['ArrowUp'])y2-=1; if(k['ArrowDown'])y2+=1;
+    Input.p2.x=x2; Input.p2.y=y2;
+  }
   Input.p2.keyKick = !!k['Enter'];
   const combined2 = Input.p2.keyKick || Input.p2.touchKick;
   Input.p2.kickJustReleased = Input.p2.prevKick && !combined2;
@@ -792,54 +866,85 @@ function pollKeyboard(){
   Input.p2.prevKick = combined2;
 }
 
-/* Touch joysticks */
+/* ---------------------------------------------------------------------
+   Touch joysticks — built on Pointer Events so mouse, touch and pen all
+   work through one code path, and so two joysticks + two kick buttons
+   can all be held down at once (true multi-touch) without interfering
+   with each other. setPointerCapture keeps delivering move/up events to
+   the zone that started the gesture even if the finger drifts outside
+   its visual bounds, which is what makes the stick reliable on phones.
+   --------------------------------------------------------------------- */
 function setupJoystick(zoneId, stickId, player){
   const zone=document.getElementById(zoneId), stick=document.getElementById(stickId);
-  let active=false, cx=0, cy=0, id=null;
+  let activeId=null, cx=0, cy=0;
   const maxR=40;
-  function start(e){
-    const t = e.changedTouches ? e.changedTouches[0] : e;
-    const rect = zone.getBoundingClientRect();
-    cx = rect.left+rect.width/2; cy = rect.top+rect.height/2;
-    id = e.changedTouches ? t.identifier : 'mouse';
-    active=true;
-    move(e);
-  }
-  function move(e){
-    if(!active) return;
-    let t = e.changedTouches ? [...e.changedTouches].find(tt=>tt.identifier===id) : e;
-    if(!t) return;
-    let dx=t.clientX-cx, dy=t.clientY-cy;
+
+  function applyFromPoint(clientX, clientY){
+    let dx=clientX-cx, dy=clientY-cy;
     const dist=Math.hypot(dx,dy);
     if(dist>maxR){ dx=dx/dist*maxR; dy=dy/dist*maxR; }
     stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     const nx = dist>6 ? dx/maxR : 0, ny = dist>6 ? dy/maxR : 0;
     player.x = Math.max(-1,Math.min(1,nx)); player.y = Math.max(-1,Math.min(1,ny));
   }
-  function end(e){
-    if(e.changedTouches){ const t=[...e.changedTouches].find(tt=>tt.identifier===id); if(!t) return; }
-    active=false; stick.style.transform='translate(-50%,-50%)'; player.x=0; player.y=0;
+  function onDown(e){
+    if(activeId!==null) return; // this joystick already tracking a finger
+    activeId = e.pointerId;
+    try{ zone.setPointerCapture(activeId); }catch(err){}
+    const rect = zone.getBoundingClientRect();
+    cx = rect.left+rect.width/2; cy = rect.top+rect.height/2;
+    player.touchActive = true;
+    zone.classList.add('active');
+    applyFromPoint(e.clientX, e.clientY);
+    e.preventDefault();
   }
-  zone.addEventListener('touchstart', start, {passive:true});
-  zone.addEventListener('touchmove', move, {passive:true});
-  zone.addEventListener('touchend', end);
-  zone.addEventListener('touchcancel', end);
+  function onMove(e){
+    if(e.pointerId!==activeId) return;
+    applyFromPoint(e.clientX, e.clientY);
+    e.preventDefault();
+  }
+  function onUp(e){
+    if(e.pointerId!==activeId) return;
+    try{ zone.releasePointerCapture(activeId); }catch(err){}
+    activeId=null;
+    zone.classList.remove('active');
+    stick.style.transform='translate(-50%,-50%)';
+    player.x=0; player.y=0;
+    player.touchActive=false;
+  }
+  zone.addEventListener('pointerdown', onDown);
+  zone.addEventListener('pointermove', onMove);
+  zone.addEventListener('pointerup', onUp);
+  zone.addEventListener('pointercancel', onUp);
 }
 setupJoystick('joy1','joy1-stick',Input.p1);
 setupJoystick('joy2','joy2-stick',Input.p2);
 
-function setupKickButton(btnId, player, isP2){
+function setupKickButton(btnId, player){
   const btn=document.getElementById(btnId);
-  function start(e){ e.preventDefault(); player.touchKick=true; if(isP2) Input.touchP2Active=true; }
-  function end(e){ e.preventDefault(); player.touchKick=false; if(isP2) Input.touchP2Active=true; }
-  btn.addEventListener('touchstart', start, {passive:false});
-  btn.addEventListener('touchend', end, {passive:false});
-  btn.addEventListener('touchcancel', end, {passive:false});
-  btn.addEventListener('mousedown', start);
-  window.addEventListener('mouseup', ()=>{ player.touchKick=false; });
+  let activeId=null;
+  function start(e){
+    if(activeId!==null) return; // already pressed by another finger
+    activeId=e.pointerId;
+    try{ btn.setPointerCapture(activeId); }catch(err){}
+    player.touchKick=true;
+    btn.classList.add('pressed');
+    e.preventDefault();
+  }
+  function end(e){
+    if(e.pointerId!==activeId) return;
+    try{ btn.releasePointerCapture(activeId); }catch(err){}
+    activeId=null;
+    player.touchKick=false;
+    btn.classList.remove('pressed');
+    e.preventDefault();
+  }
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointercancel', end);
 }
-setupKickButton('kick1',Input.p1,false);
-setupKickButton('kick2',Input.p2,true);
+setupKickButton('kick1',Input.p1);
+setupKickButton('kick2',Input.p2);
 
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
 if(isTouchDevice){
@@ -1423,8 +1528,12 @@ window.addEventListener('resize', ()=>Match.resize());
 window.addEventListener('pointerdown', ()=>AudioSys.ensure(), {once:true});
 window.addEventListener('keydown', ()=>AudioSys.ensure(), {once:true});
 
-// start subtle menu ambience if enabled
-if(Settings.music){ document.addEventListener('pointerdown', ()=>AudioSys.setMusicEnabled(true), {once:true}); }
+// start music (real file if available, else built-in ambience) on first user gesture,
+// as required by browser autoplay policies
+if(Settings.music){
+  document.addEventListener('pointerdown', ()=>MusicSys.play(), {once:true});
+  document.addEventListener('keydown', ()=>MusicSys.play(), {once:true});
+}
 if(!Settings.sfx){ document.addEventListener('pointerdown', ()=>AudioSys.setSfxEnabled(false), {once:true}); }
 </script>
 </body>
