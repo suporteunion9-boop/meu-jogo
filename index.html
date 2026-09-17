@@ -209,10 +209,9 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
 #touch-layer{
   position:absolute;inset:0;z-index:7;pointer-events:none;
   display:flex;align-items:flex-end;justify-content:space-between;
-  padding:0 calc(14px + env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));
+  padding:0 calc(18px + env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) calc(18px + env(safe-area-inset-left,0px));
 }
 .touch-side{display:flex;align-items:flex-end;gap:min(6vw,34px);pointer-events:none;}
-.touch-side.right{flex-direction:row-reverse;}
 .joy-zone{position:relative;width:min(30vw,140px);height:min(30vw,140px);pointer-events:auto;touch-action:none;flex-shrink:0;}
 .joy-base{position:absolute;inset:0;border-radius:50%;background:rgba(244,247,255,.12);border:2px solid rgba(244,247,255,.25);}
 .joy-stick{position:absolute;width:44%;height:44%;border-radius:50%;background:rgba(255,255,255,.55);
