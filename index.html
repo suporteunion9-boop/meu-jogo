@@ -206,25 +206,38 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
 /* =========================================================================
    TOUCH CONTROLS
    ========================================================================= */
-#touch-layer{position:absolute;inset:0;z-index:7;pointer-events:none;}
-.joy-zone{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:min(34vw,150px);height:min(34vw,150px);pointer-events:auto;touch-action:none;}
-.joy-zone.p1{left:calc(14px + env(safe-area-inset-left,0px));}
-.joy-zone.p2{right:calc(14px + env(safe-area-inset-right,0px));}
+#touch-layer{
+  position:absolute;inset:0;z-index:7;pointer-events:none;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 calc(14px + env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));
+}
+.touch-side{display:flex;align-items:flex-end;gap:min(6vw,34px);pointer-events:none;}
+.touch-side.right{flex-direction:row-reverse;}
+.joy-zone{position:relative;width:min(30vw,140px);height:min(30vw,140px);pointer-events:auto;touch-action:none;flex-shrink:0;}
 .joy-base{position:absolute;inset:0;border-radius:50%;background:rgba(244,247,255,.12);border:2px solid rgba(244,247,255,.25);}
 .joy-stick{position:absolute;width:44%;height:44%;border-radius:50%;background:rgba(255,255,255,.55);
   top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.8);pointer-events:none;
   transition:background-color .1s;}
 .joy-zone.active .joy-stick{background:rgba(255,210,63,.75);}
-.kick-btn{
-  position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:min(20vw,84px);height:min(20vw,84px);border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#ff8484,var(--coral));
-  border:3px solid rgba(255,255,255,.5);color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px;
-  display:flex;align-items:center;justify-content:center;pointer-events:auto;box-shadow:0 4px 10px rgba(0,0,0,.35);
-  touch-action:none;-webkit-tap-highlight-color:transparent;transition:transform .06s,filter .06s;
+
+.action-pair{display:flex;flex-direction:column;align-items:center;gap:min(4vw,16px);pointer-events:none;flex-shrink:0;}
+.kick-btn,.pass-btn{
+  position:relative;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;
+  border-radius:50%;color:#fff;font-family:var(--font-display);font-weight:700;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.35);
+  transition:transform .06s,filter .06s;flex-shrink:0;
 }
-.kick-btn.p1{left:calc(160px);}
-.kick-btn.p2{right:calc(160px);}
-.kick-btn:active,.kick-btn.pressed{transform:scale(.88);filter:brightness(1.18);}
+.kick-btn{
+  width:min(20vw,84px);height:min(20vw,84px);font-size:12px;
+  background:radial-gradient(circle at 35% 30%,#ff8484,var(--coral));
+  border:3px solid rgba(255,255,255,.5);
+}
+.pass-btn{
+  width:min(16vw,66px);height:min(16vw,66px);font-size:10px;
+  background:radial-gradient(circle at 35% 30%,#7fd6ff,#2f8fd6);
+  border:3px solid rgba(255,255,255,.5);
+}
+.kick-btn:active,.kick-btn.pressed,.pass-btn:active,.pass-btn.pressed{transform:scale(.88);filter:brightness(1.18);}
 
 /* =========================================================================
    PAUSE / RESULT
@@ -346,6 +359,7 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
             <div class="ctrl-row"><span class="key">S</span> Baixo</div>
             <div class="ctrl-row"><span class="key">D</span> Direita</div>
             <div class="ctrl-row"><span class="key">ESPAÇO</span> Segurar p/ carregar chute</div>
+            <div class="ctrl-row"><span class="key">SHIFT ESQ</span> Passar</div>
           </div>
           <div>
             <div class="section-title">⌨️ JOGADOR 2 (teclado)</div>
@@ -354,16 +368,17 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
             <div class="ctrl-row"><span class="key">↓</span> Baixo</div>
             <div class="ctrl-row"><span class="key">→</span> Direita</div>
             <div class="ctrl-row"><span class="key">ENTER</span> Segurar p/ carregar chute</div>
+            <div class="ctrl-row"><span class="key">SHIFT DIR</span> Passar</div>
           </div>
         </div>
       </div>
       <div class="card-panel" style="margin-bottom:14px;">
         <div class="section-title">📱 CELULAR / TABLET</div>
-        <p class="small-note">Use o joystick virtual no canto da tela para mover seu jogador e o botão vermelho "CHUTAR" para chutar — segure para carregar a força do chute e solte para bater. No modo 2 jogadores, cada pessoa usa um lado da tela.</p>
+        <p class="small-note">O joystick virtual fica no canto inferior esquerdo. Do lado direito ficam os botões azul "PASSAR" e vermelho "CHUTAR" — toque rápido em CHUTAR para um chute simples, ou segure para carregar força e solte para bater. No modo 2 jogadores, cada pessoa usa metade da tela, com seu próprio joystick e seus próprios botões.</p>
       </div>
       <div class="card-panel">
         <div class="section-title">⚽ DICAS</div>
-        <p class="small-note">Corra até a bola para dominá-la. Segure o botão de chute para carregar força — quanto mais tempo segurar, mais forte a bomba. O goleiro defende sozinho, mas fique atento aos contra-ataques da CPU!</p>
+        <p class="small-note">Corra até a bola para dominá-la. Segure o botão de chute para carregar força — quanto mais tempo segurar, mais forte a bomba. Use PASSAR para tocar a bola ao seu companheiro de time. Você controla automaticamente o jogador do seu time mais perto da bola — um anel colorido embaixo dele mostra quem está sob seu comando no momento. O goleiro defende sozinho, mas fique atento aos contra-ataques da CPU!</p>
       </div>
     </div>
   </div>
@@ -433,10 +448,20 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
       <div id="center-overlay"></div>
 
       <div id="touch-layer">
-        <div class="joy-zone p1" id="joy1"><div class="joy-base"></div><div class="joy-stick" id="joy1-stick"></div></div>
-        <div class="joy-zone p2" id="joy2" style="display:none;"><div class="joy-base"></div><div class="joy-stick" id="joy2-stick"></div></div>
-        <div class="kick-btn p1" id="kick1">CHUTAR</div>
-        <div class="kick-btn p2" id="kick2" style="display:none;">CHUTAR</div>
+        <div class="touch-side left" id="touch-side-left">
+          <div class="joy-zone p1" id="joy1"><div class="joy-base"></div><div class="joy-stick" id="joy1-stick"></div></div>
+          <div class="action-pair" id="actions-p1">
+            <div class="pass-btn" id="pass1">PASSAR</div>
+            <div class="kick-btn" id="kick1">CHUTAR</div>
+          </div>
+        </div>
+        <div class="touch-side right" id="touch-side-right" style="display:none;">
+          <div class="action-pair" id="actions-p2">
+            <div class="pass-btn" id="pass2">PASSAR</div>
+            <div class="kick-btn" id="kick2">CHUTAR</div>
+          </div>
+          <div class="joy-zone p2" id="joy2"><div class="joy-base"></div><div class="joy-stick" id="joy2-stick"></div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -824,8 +849,8 @@ AudioSys.setVolume(Settings.volume/100);
    ========================================================================= */
 const Input = {
   keys:{},
-  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false},
-  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false},
+  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false,passPressed:false,passKeyPrev:false},
+  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false,passPressed:false,passKeyPrev:false},
 };
 window.addEventListener('keydown', e=>{
   Input.keys[e.code]=true;
@@ -853,6 +878,9 @@ function pollKeyboard(){
   Input.p1.kickJustReleased = Input.p1.prevKick && !combined1;
   Input.p1.kick = combined1;
   Input.p1.prevKick = combined1;
+  const passKey1 = !!k['ShiftLeft'];
+  if(passKey1 && !Input.p1.passKeyPrev) Input.p1.passPressed = true;
+  Input.p1.passKeyPrev = passKey1;
 
   if(!Input.p2.touchActive){
     let x2=0,y2=0;
@@ -864,6 +892,9 @@ function pollKeyboard(){
   Input.p2.kickJustReleased = Input.p2.prevKick && !combined2;
   Input.p2.kick = combined2;
   Input.p2.prevKick = combined2;
+  const passKey2 = !!k['ShiftRight'];
+  if(passKey2 && !Input.p2.passKeyPrev) Input.p2.passPressed = true;
+  Input.p2.passKeyPrev = passKey2;
 }
 
 /* ---------------------------------------------------------------------
@@ -946,11 +977,76 @@ function setupKickButton(btnId, player){
 setupKickButton('kick1',Input.p1);
 setupKickButton('kick2',Input.p2);
 
-const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
-if(isTouchDevice){
-  document.getElementById('joy1').style.display='block';
-  document.getElementById('kick1').style.display='flex';
+function setupPassButton(btnId, player){
+  const btn=document.getElementById(btnId);
+  let activeId=null;
+  function start(e){
+    if(activeId!==null) return;
+    activeId=e.pointerId;
+    try{ btn.setPointerCapture(activeId); }catch(err){}
+    player.passPressed = true; // edge-triggered: consumed once by the game loop
+    btn.classList.add('pressed');
+    e.preventDefault();
+  }
+  function end(e){
+    if(e.pointerId!==activeId) return;
+    try{ btn.releasePointerCapture(activeId); }catch(err){}
+    activeId=null;
+    btn.classList.remove('pressed');
+    e.preventDefault();
+  }
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointercancel', end);
 }
+setupPassButton('pass1',Input.p1);
+setupPassButton('pass2',Input.p2);
+
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+
+/* ---------------------------------------------------------------------
+   Lays out the on-screen controls for the current match mode.
+   - Single player: joystick pinned to the bottom-left corner; the
+     CHUTAR/PASSAR pair pinned to the bottom-right corner, as far from
+     the joystick as possible (maximum comfortable reach for two thumbs).
+   - 2 players (same device): each player's joystick + action pair stay
+     together, hugging their own half of the screen, so neither
+     player's thumb has to cross into the other's territory.
+   The flex layout below (see CSS) guarantees the pairs never overlap
+   and reflows automatically for any screen size or orientation.
+   --------------------------------------------------------------------- */
+function layoutTouchControls(){
+  const sideLeft = document.getElementById('touch-side-left');
+  const sideRight = document.getElementById('touch-side-right');
+  const joy1 = document.getElementById('joy1');
+  const actionsP1 = document.getElementById('actions-p1');
+  const actionsP2 = document.getElementById('actions-p2');
+  const joy2 = document.getElementById('joy2');
+
+  if(!isTouchDevice){
+    sideLeft.style.display='none';
+    sideRight.style.display='none';
+    return;
+  }
+
+  sideLeft.appendChild(joy1);
+  sideLeft.style.display='flex';
+
+  if(Session.mode==='2p'){
+    sideLeft.appendChild(actionsP1);
+    sideRight.appendChild(actionsP2);
+    sideRight.appendChild(joy2);
+    sideRight.style.display='flex';
+    actionsP2.style.display='flex';
+    joy2.style.display='block';
+  } else {
+    sideRight.appendChild(actionsP1);
+    sideRight.style.display='flex';
+    actionsP2.style.display='none';
+    joy2.style.display='none';
+  }
+}
+layoutTouchControls();
 
 /* =========================================================================
    8. ENTITIES
@@ -994,7 +1090,7 @@ class Player {
   }
   speedMul(){ return 0.82 + this.team.spd*0.062; }
   kickMul(){ return 0.8 + this.team.atk*0.07; }
-  update(dt, moveX, moveY, wantKickCharge, wantKickRelease, ball){
+  update(dt, moveX, moveY, wantKickCharge, wantKickRelease, ball, wantPass, passTarget){
     const mag = Math.hypot(moveX,moveY);
     const baseSpeed = 168 * this.speedMul();
     if(mag>0.05){
@@ -1015,6 +1111,9 @@ class Player {
       this.isCharging=false; this.kickCharge=0;
     }
     if(!wantKickCharge && !wantKickRelease) { if(!this.isCharging) this.kickCharge=0; }
+    // A pass is a separate, instant action (no charging) so it can never be
+    // blocked or delayed by a shot that's mid-charge.
+    if(wantPass && passTarget){ this.tryPass(ball, passTarget); }
     if(this.kickAnim>0) this.kickAnim=Math.max(0,this.kickAnim-dt*4);
   }
   tryKick(ball, power){
@@ -1037,6 +1136,20 @@ class Player {
       AudioSys.kick(power2);
     }
   }
+  tryPass(ball, target){
+    const d = Math.hypot(ball.x-this.x, ball.y-this.y);
+    if(d < PLAYER_R + BALL_R + 22){
+      let dx = target.x-this.x, dy = target.y-this.y;
+      const dist = Math.max(1,Math.hypot(dx,dy));
+      dx/=dist; dy/=dist;
+      // moderate, distance-scaled pace — enough to reach the teammate without
+      // overshooting the way a full-power shot would
+      const speed = 300 + Math.min(300, dist*0.55);
+      ball.vx = dx*speed; ball.vy = dy*speed;
+      this.kickAnim = 1;
+      AudioSys.kick(0.32);
+    }
+  }
 }
 
 /* =========================================================================
@@ -1048,22 +1161,26 @@ const DIFF = {
   dificil: {speed:1.08, reaction:0.95, aggression:0.95, err:0.05},
 };
 
-function aiFieldPlayer(p, ball, diffKey, teammates, opponents, goalX, ownGoalX){
+function aiFieldPlayer(p, ball, diffKey, isChaser, attackBias, goalX, ownGoalX){
   const d = DIFF[diffKey]||DIFF.normal;
   const distToBall = Math.hypot(ball.x-p.x, ball.y-p.y);
   const errX = (Math.random()-0.5)*80*(d.err);
   const errY = (Math.random()-0.5)*80*(d.err);
   let targetX, targetY, wantKick=false, wantRelease=false;
 
-  const ballComingToGoal = Math.sign(ball.vx) === Math.sign(ownGoalX-p.x) && Math.abs(ball.vx) > 40;
-  const shouldChase = distToBall < 260*d.aggression + 60 || Math.random()<0.02;
-
-  if(shouldChase){
+  if(isChaser){
+    // the one designated player on this side actually contests the ball
     targetX = ball.x + errX*0.3; targetY = ball.y + errY*0.3;
   } else {
-    // hold strategic position between ball and own goal, biased toward attack
-    targetX = lerp(p.homeX, ball.x, 0.35) + errX;
-    targetY = lerp(p.homeY, ball.y, 0.45) + errY;
+    // everyone else holds a supporting shape instead of piling onto the ball:
+    // push up when the team is attacking, drop back when defending, and stay
+    // spread across each player's own lane (homeX/homeY) so teammates don't
+    // bunch together and look "stuck" on top of one another
+    const advancedX = lerp(p.homeX, goalX, 0.28);
+    const retreatedX = lerp(p.homeX, ownGoalX, 0.18);
+    const laneX = attackBias>0 ? advancedX : retreatedX;
+    targetX = lerp(laneX, ball.x, 0.18) + errX;
+    targetY = lerp(p.homeY, ball.y, 0.30) + errY;
   }
   const dx=targetX-p.x, dy=targetY-p.y;
   const dist=Math.max(1,Math.hypot(dx,dy));
@@ -1090,6 +1207,48 @@ function aiGoalkeeper(p, ball, goalLineX, side){
   const distToBall = Math.hypot(ball.x-p.x, ball.y-p.y);
   if(distToBall < 55){ wantKick=true; wantRelease = Math.random()<0.35; }
   return {mx,my,wantKick,wantRelease};
+}
+
+/* ---------------------------------------------------------------------
+   Auto player-switching: the human always controls whichever outfield
+   player on their side is closest to the ball. A short cooldown after
+   each switch stops it from flickering back and forth when two players
+   are nearly equidistant, and it never touches the goalkeeper.
+   --------------------------------------------------------------------- */
+const SwitchState = { human1:0, human2:0 };
+function nearestOutfielder(players, side, ball){
+  let best=null, bd=Infinity;
+  for(const p of players){
+    if(p.side!==side || p.role==='gk') continue;
+    const d=Math.hypot(ball.x-p.x, ball.y-p.y);
+    if(d<bd){ bd=d; best=p; }
+  }
+  return best;
+}
+function trySwitch(slot, side){
+  if(SwitchState[slot]>0) return;
+  const candidates = Match.players.filter(p=>p.side===side && p.role!=='gk');
+  if(candidates.length<2) return;
+  const current = candidates.find(p=>p.control===slot);
+  if(!current || current.isCharging) return;
+  const ball = Match.ball;
+  let best=current, bestD=Math.hypot(ball.x-current.x, ball.y-current.y);
+  for(const p of candidates){
+    if(p===current) continue;
+    const d=Math.hypot(ball.x-p.x, ball.y-p.y);
+    if(d < bestD-34){ best=p; bestD=d; }
+  }
+  if(best!==current){
+    current.control = (current.control==='human1'||current.control==='human2') ? 'support-ai' : current.control;
+    best.control = slot;
+    SwitchState[slot]=0.4;
+  }
+}
+function updateAutoSwitch(dt){
+  SwitchState.human1 = Math.max(0, SwitchState.human1-dt);
+  SwitchState.human2 = Math.max(0, SwitchState.human2-dt);
+  trySwitch('human1','left');
+  if(Session.mode==='2p') trySwitch('human2','right');
 }
 
 /* =========================================================================
@@ -1166,9 +1325,7 @@ const Match = {
     this.matchDuration = Session.duration;
     this.timeLeft = this.matchDuration;
     updateScoreboardNames();
-    document.getElementById('joy2').style.display = Session.mode==='2p' && isTouchDevice ? 'block' : 'none';
-    document.getElementById('kick2').style.display = Session.mode==='2p' && isTouchDevice ? 'flex' : 'none';
-    if(!isTouchDevice){ document.getElementById('joy1').style.display='none'; document.getElementById('kick1').style.display='none'; }
+    layoutTouchControls();
     UI.show('match');
     this.resize();
     this.paused=false;
@@ -1260,31 +1417,59 @@ const Match = {
     if(this.timeLeft<=0){ this.timeLeft=0; this.enterOver(); }
     document.getElementById('sb-timer').textContent = formatTime(this.timeLeft);
 
+    // Auto-switch: the human always controls whichever of their outfield
+    // players is closest to the ball, so every player on the team gets used
+    // instead of one fixed player doing everything. The goalkeeper is never
+    // handed to a human — it keeps defending the goal on its own, as before.
+    updateAutoSwitch(dt);
+
+    // Find, per side, the single outfield player nearest the ball. Only that
+    // player actively contests it this frame — teammates hold a supporting
+    // shape instead of all piling onto the ball at once.
+    const leftChaser = nearestOutfielder(this.players, 'left', this.ball);
+    const rightChaser = nearestOutfielder(this.players, 'right', this.ball);
+    // Simple attack/defend posture: a side is "attacking" while the ball sits
+    // in the opponent's half.
+    const leftAttacking = this.ball.x > FW/2 ? 1 : -1;
+    const rightAttacking = this.ball.x < FW/2 ? 1 : -1;
+
     // control mapping per player
     for(const p of this.players){
-      let mx=0,my=0,wKick=false,wRelease=false;
+      let mx=0,my=0,wKick=false,wRelease=false,wPass=false,passTarget=null;
+      const teammate = this.players.find(q=>q.side===p.side && q!==p && q.role!=='gk');
       if(p.control==='human1'){
         mx=Input.p1.x; my=Input.p1.y; wKick=Input.p1.kick; wRelease=Input.p1.kickJustReleased;
+        wPass=Input.p1.passPressed; passTarget=teammate;
       } else if(p.control==='human2'){
         mx=Input.p2.x; my=Input.p2.y; wKick=Input.p2.kick; wRelease=Input.p2.kickJustReleased;
-      } else if(p.control==='ai'){
+        wPass=Input.p2.passPressed; passTarget=teammate;
+      } else if(p.control==='ai' || p.control==='support-ai'){
         const goalX = p.side==='left'? FW : 0;
         const ownGoalX = p.side==='left'? 0 : FW;
-        const r = aiFieldPlayer(p, this.ball, Session.difficulty, [], [], goalX, ownGoalX);
-        mx=r.mx; my=r.my; wKick=r.wantKick; wRelease=r.wantRelease;
-      } else if(p.control==='support-ai'){
-        const goalX = p.side==='left'? FW : 0;
-        const ownGoalX = p.side==='left'? 0 : FW;
-        const r = aiFieldPlayer(p, this.ball, 'normal', [], [], goalX, ownGoalX);
-        mx=r.mx*0.85; my=r.my*0.85; wKick=r.wantKick; wRelease=r.wantRelease;
+        const isChaser = p===leftChaser || p===rightChaser;
+        const attackBias = p.side==='left'? leftAttacking : rightAttacking;
+        const diffKey = p.control==='ai' ? Session.difficulty : 'normal';
+        const speedTrim = p.control==='support-ai' ? 0.85 : 1;
+        const r = aiFieldPlayer(p, this.ball, diffKey, isChaser, attackBias, goalX, ownGoalX);
+        mx=r.mx*speedTrim; my=r.my*speedTrim; wKick=r.wantKick; wRelease=r.wantRelease;
+        // A chaser that's ready to strike but still far from goal prefers to
+        // lay the ball off to its teammate rather than force a low-percentage
+        // shot — this is what makes the AI actually pass the ball around.
+        if(isChaser && wRelease && teammate){
+          const distToGoal = Math.hypot(goalX-p.x, FH/2-p.y);
+          if(distToGoal > 260 && Math.random() < 0.5){
+            wPass = true; passTarget = teammate; wRelease = false;
+          }
+        }
       } else if(p.control==='gk-ai'){
         const goalLineX = p.side==='left'? 8 : FW-8;
         const r = aiGoalkeeper(p, this.ball, goalLineX, p.side);
         mx=r.mx; my=r.my; wKick=r.wantKick; wRelease=r.wantRelease;
       }
-      p.update(dt, mx, my, wKick, wRelease, this.ball);
+      p.update(dt, mx, my, wKick, wRelease, this.ball, wPass, passTarget);
     }
     Input.p1.kickJustReleased=false; Input.p2.kickJustReleased=false;
+    Input.p1.passPressed=false; Input.p2.passPressed=false;
 
     // player-player collisions (soft push apart)
     for(let i=0;i<this.players.length;i++){
@@ -1461,6 +1646,14 @@ function drawPlayer(ctx, M, p){
   // shadow
   ctx.beginPath(); ctx.ellipse(x, y+30*s, 20*s, 7*s, 0,0,Math.PI*2);
   ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fill();
+  // ring under whichever player is currently human-controlled — the
+  // controlled player can change on the fly (auto-switch), so this keeps
+  // it obvious who you're moving right now
+  if(p.control==='human1' || p.control==='human2'){
+    ctx.beginPath(); ctx.ellipse(x, y+30*s, 20*s, 7*s, 0,0,Math.PI*2);
+    ctx.strokeStyle = p.control==='human1' ? 'rgba(92,208,255,.9)' : 'rgba(255,93,93,.9)';
+    ctx.lineWidth = Math.max(2,2.4*s); ctx.stroke();
+  }
   ctx.save();
   ctx.translate(x,y);
   const faceDir = p.facing>=0?1:-1;
