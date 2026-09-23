@@ -146,6 +146,7 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
 .team-card.picked1{border-color:#5cd0ff;box-shadow:0 0 0 2px #5cd0ff inset;}
 .team-card.picked2{border-color:var(--coral);box-shadow:0 0 0 2px var(--coral) inset;}
 .team-jersey{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;position:relative;box-shadow:inset 0 0 0 3px rgba(0,0,0,.2);}
+.team-crest{display:block;margin:0 auto 8px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
 .team-name{font-size:13px;font-weight:700;font-family:var(--font-display);margin-bottom:6px;}
 .stat-bar{height:4px;border-radius:3px;background:rgba(0,0,0,.25);margin:3px 0;overflow:hidden;}
 .stat-bar i{display:block;height:100%;background:var(--sun);}
@@ -313,6 +314,12 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
             <div class="slot-name" id="slot2-name">Escolha</div>
           </div>
         </div>
+      </div>
+
+      <div class="pill-row" id="team-category-pills" style="margin-bottom:12px;">
+        <div class="pill active" data-cat="selecoes">🌍 Seleções</div>
+        <div class="pill" data-cat="brasil">🇧🇷 Clubes Brasileiros</div>
+        <div class="pill" data-cat="brasileirao">🏆 Brasileirão – Série A</div>
       </div>
 
       <div class="team-grid" id="team-grid"></div>
@@ -684,18 +691,62 @@ Settings.load();
    4. TEAMS DATA (fictitious rosters — colors & names only, no crests/logos)
    ========================================================================= */
 const TEAMS = [
-  {id:'brasil',   name:'Brasil',           primary:'#ffd400', secondary:'#0b8a3e', atk:5, def:3, spd:4},
-  {id:'argentina',name:'Argentina',        primary:'#8ec9f0', secondary:'#ffffff', atk:5, def:4, spd:4},
-  {id:'franca',   name:'França',           primary:'#3060c8', secondary:'#ffffff', atk:4, def:4, spd:4},
-  {id:'alemanha', name:'Alemanha',         primary:'#2b2b2b', secondary:'#e0442f', atk:4, def:5, spd:3},
-  {id:'espanha',  name:'Espanha',          primary:'#d62839', secondary:'#ffc400', atk:4, def:3, spd:5},
-  {id:'portugal', name:'Portugal',         primary:'#1c7a3e', secondary:'#e0442f', atk:5, def:3, spd:4},
-  {id:'inglaterra',name:'Inglaterra',      primary:'#f2f2f2', secondary:'#c8102e', atk:3, def:4, spd:4},
-  {id:'italia',   name:'Itália',           primary:'#2f6fd6', secondary:'#ffffff', atk:3, def:5, spd:3},
-  {id:'holanda',  name:'Holanda',          primary:'#ff8c1a', secondary:'#1c1c1c', atk:4, def:3, spd:5},
-  {id:'japao',    name:'Japão',            primary:'#2540a8', secondary:'#ffffff', atk:3, def:4, spd:5},
-  {id:'mexico',   name:'México',           primary:'#22a35a', secondary:'#ffffff', atk:3, def:3, spd:5},
-  {id:'eua',      name:'Estados Unidos',   primary:'#33397e', secondary:'#e04150', atk:3, def:4, spd:4},
+  {id:'brasil',   name:'Brasil',           primary:'#ffd400', secondary:'#0b8a3e', atk:5, def:3, spd:4, cat:'selecoes'},
+  {id:'argentina',name:'Argentina',        primary:'#8ec9f0', secondary:'#ffffff', atk:5, def:4, spd:4, cat:'selecoes'},
+  {id:'franca',   name:'França',           primary:'#3060c8', secondary:'#ffffff', atk:4, def:4, spd:4, cat:'selecoes'},
+  {id:'alemanha', name:'Alemanha',         primary:'#2b2b2b', secondary:'#e0442f', atk:4, def:5, spd:3, cat:'selecoes'},
+  {id:'espanha',  name:'Espanha',          primary:'#d62839', secondary:'#ffc400', atk:4, def:3, spd:5, cat:'selecoes'},
+  {id:'portugal', name:'Portugal',         primary:'#1c7a3e', secondary:'#e0442f', atk:5, def:3, spd:4, cat:'selecoes'},
+  {id:'inglaterra',name:'Inglaterra',      primary:'#f2f2f2', secondary:'#c8102e', atk:3, def:4, spd:4, cat:'selecoes'},
+  {id:'italia',   name:'Itália',           primary:'#2f6fd6', secondary:'#ffffff', atk:3, def:5, spd:3, cat:'selecoes'},
+  {id:'holanda',  name:'Holanda',          primary:'#ff8c1a', secondary:'#1c1c1c', atk:4, def:3, spd:5, cat:'selecoes'},
+  {id:'japao',    name:'Japão',            primary:'#2540a8', secondary:'#ffffff', atk:3, def:4, spd:5, cat:'selecoes'},
+  {id:'mexico',   name:'México',           primary:'#22a35a', secondary:'#ffffff', atk:3, def:3, spd:5, cat:'selecoes'},
+  {id:'eua',      name:'Estados Unidos',   primary:'#33397e', secondary:'#e04150', atk:3, def:4, spd:4, cat:'selecoes'},
+
+  // 🇧🇷 Clubes brasileiros
+  {id:'santos',      name:'Santos',              primary:'#ffffff', secondary:'#1c1c1c', atk:4, def:3, spd:4, cat:'brasil'},
+  {id:'corinthians', name:'Corinthians',         primary:'#ffffff', secondary:'#1c1c1c', atk:4, def:4, spd:3, cat:'brasil'},
+  {id:'saopaulo',    name:'São Paulo',           primary:'#ffffff', secondary:'#e0442f', atk:4, def:4, spd:3, cat:'brasil'},
+  {id:'palmeiras',   name:'Palmeiras',           primary:'#0b8a3e', secondary:'#ffffff', atk:5, def:4, spd:4, cat:'brasil'},
+  {id:'flamengo',    name:'Flamengo',            primary:'#e0442f', secondary:'#1c1c1c', atk:5, def:3, spd:4, cat:'brasil'},
+  {id:'cruzeiro',    name:'Cruzeiro',            primary:'#2540a8', secondary:'#ffffff', atk:4, def:4, spd:3, cat:'brasil'},
+  {id:'bahia',       name:'Bahia',               primary:'#2540a8', secondary:'#e0442f', atk:3, def:3, spd:4, cat:'brasil'},
+  {id:'gremio',      name:'Grêmio',              primary:'#2f6fd6', secondary:'#1c1c1c', atk:4, def:4, spd:3, cat:'brasil'},
+  {id:'internacional',name:'Internacional',      primary:'#e0442f', secondary:'#ffffff', atk:4, def:3, spd:4, cat:'brasil'},
+  {id:'atleticomg',  name:'Atlético-MG',         primary:'#1c1c1c', secondary:'#ffffff', atk:4, def:3, spd:4, cat:'brasil'},
+  {id:'botafogo',    name:'Botafogo',            primary:'#1c1c1c', secondary:'#ffffff', atk:3, def:4, spd:4, cat:'brasil'},
+  {id:'fluminense',  name:'Fluminense',          primary:'#7a1f3d', secondary:'#0b8a3e', atk:3, def:3, spd:5, cat:'brasil'},
+  {id:'vasco',       name:'Vasco',               primary:'#ffffff', secondary:'#1c1c1c', atk:3, def:4, spd:3, cat:'brasil'},
+  {id:'athleticopr', name:'Athletico-PR',        primary:'#e0442f', secondary:'#1c1c1c', atk:3, def:4, spd:4, cat:'brasil'},
+  {id:'bragantino',  name:'Red Bull Bragantino', primary:'#e0442f', secondary:'#ffffff', atk:4, def:3, spd:4, cat:'brasil'},
+  {id:'fortaleza',   name:'Fortaleza',           primary:'#2540a8', secondary:'#e0442f', atk:3, def:3, spd:4, cat:'brasil'},
+  {id:'ceara',       name:'Ceará',               primary:'#1c1c1c', secondary:'#ffffff', atk:3, def:3, spd:3, cat:'brasil'},
+  {id:'sport',       name:'Sport',               primary:'#e0442f', secondary:'#1c1c1c', atk:3, def:3, spd:3, cat:'brasil'},
+  {id:'vitoria',     name:'Vitória',             primary:'#e0442f', secondary:'#1c1c1c', atk:3, def:3, spd:4, cat:'brasil'},
+  {id:'goias',       name:'Goiás',               primary:'#0b8a3e', secondary:'#ffffff', atk:3, def:3, spd:3, cat:'brasil'},
+
+  // 🇧🇷 Brasileirão – Série A (temporada 2026, clubes participantes)
+  {id:'sa_palmeiras',    name:'Palmeiras',           primary:'#0b8a3e', secondary:'#ffffff', atk:5, def:5, spd:4, cat:'brasileirao', abbr:'PAL'},
+  {id:'sa_flamengo',     name:'Flamengo',            primary:'#e0442f', secondary:'#1c1c1c', atk:5, def:4, spd:4, cat:'brasileirao', abbr:'FLA'},
+  {id:'sa_athleticopr',  name:'Athletico Paranaense',primary:'#e0442f', secondary:'#1c1c1c', atk:4, def:4, spd:4, cat:'brasileirao', abbr:'CAP'},
+  {id:'sa_bahia',        name:'Bahia',               primary:'#2540a8', secondary:'#e0442f', atk:4, def:3, spd:4, cat:'brasileirao', abbr:'BAH'},
+  {id:'sa_fluminense',   name:'Fluminense',          primary:'#7a1f3d', secondary:'#0b8a3e', atk:4, def:3, spd:4, cat:'brasileirao', abbr:'FLU'},
+  {id:'sa_cruzeiro',     name:'Cruzeiro',            primary:'#2540a8', secondary:'#ffffff', atk:4, def:3, spd:3, cat:'brasileirao', abbr:'CRU'},
+  {id:'sa_coritiba',     name:'Coritiba',            primary:'#0b8a3e', secondary:'#e0442f', atk:3, def:4, spd:3, cat:'brasileirao', abbr:'CTB'},
+  {id:'sa_atleticomg',   name:'Atlético Mineiro',    primary:'#1c1c1c', secondary:'#ffffff', atk:4, def:3, spd:3, cat:'brasileirao', abbr:'CAM'},
+  {id:'sa_bragantino',   name:'Red Bull Bragantino', primary:'#e0442f', secondary:'#ffffff', atk:4, def:3, spd:4, cat:'brasileirao', abbr:'RBB'},
+  {id:'sa_corinthians',  name:'Corinthians',         primary:'#ffffff', secondary:'#1c1c1c', atk:3, def:4, spd:3, cat:'brasileirao', abbr:'COR'},
+  {id:'sa_saopaulo',     name:'São Paulo',           primary:'#ffffff', secondary:'#e0442f', atk:3, def:3, spd:4, cat:'brasileirao', abbr:'SPA'},
+  {id:'sa_botafogo',     name:'Botafogo',            primary:'#1c1c1c', secondary:'#ffffff', atk:4, def:3, spd:3, cat:'brasileirao', abbr:'BOT'},
+  {id:'sa_vitoria',      name:'Vitória',             primary:'#e0442f', secondary:'#1c1c1c', atk:3, def:3, spd:4, cat:'brasileirao', abbr:'VIT'},
+  {id:'sa_santos',       name:'Santos',              primary:'#ffffff', secondary:'#1c1c1c', atk:3, def:3, spd:4, cat:'brasileirao', abbr:'SAN'},
+  {id:'sa_gremio',       name:'Grêmio',              primary:'#2f6fd6', secondary:'#1c1c1c', atk:3, def:3, spd:3, cat:'brasileirao', abbr:'GRE'},
+  {id:'sa_mirassol',     name:'Mirassol',            primary:'#ffd400', secondary:'#0b8a3e', atk:3, def:3, spd:4, cat:'brasileirao', abbr:'MIR'},
+  {id:'sa_vasco',        name:'Vasco da Gama',       primary:'#1c1c1c', secondary:'#ffffff', atk:3, def:3, spd:3, cat:'brasileirao', abbr:'VAS'},
+  {id:'sa_internacional',name:'Internacional',       primary:'#e0442f', secondary:'#ffffff', atk:3, def:3, spd:3, cat:'brasileirao', abbr:'INT'},
+  {id:'sa_remo',         name:'Remo',                primary:'#2540a8', secondary:'#ffffff', atk:3, def:3, spd:4, cat:'brasileirao', abbr:'REM'},
+  {id:'sa_chapecoense',  name:'Chapecoense',         primary:'#0b8a3e', secondary:'#ffffff', atk:2, def:3, spd:3, cat:'brasileirao', abbr:'CHA'},
 ];
 
 /* =========================================================================
@@ -736,17 +787,31 @@ const Session = {
   focusedSlot: 1,
   difficulty: Settings.difficulty,
   duration: Settings.duration,
+  teamCategory: 'selecoes', // 'selecoes' | 'brasil' — which grid the picker is showing
 };
 
+function crestBadge(team){
+  // Original stylized shield with the club's colors + initials — not a
+  // reproduction of any official crest (those are trademarked), but still
+  // gives each club its own clear visual identity on the picker.
+  if(!team.abbr) return `<div class="team-jersey" style="background:${team.primary};border-color:${team.secondary}"></div>`;
+  return `
+    <svg class="team-crest" viewBox="0 0 48 54" width="44" height="48">
+      <path d="M24 2 L44 9 L44 27 C44 40 35.5 48.5 24 52 C12.5 48.5 4 40 4 27 L4 9 Z"
+            fill="${team.primary}" stroke="${team.secondary}" stroke-width="3"/>
+      <text x="24" y="32" text-anchor="middle" font-family="var(--font-display)" font-weight="800"
+            font-size="14" fill="${team.secondary}">${team.abbr}</text>
+    </svg>`;
+}
 function buildTeamGrid(){
   const grid = document.getElementById('team-grid');
   grid.innerHTML='';
-  TEAMS.forEach(team=>{
+  TEAMS.filter(team=>team.cat===Session.teamCategory).forEach(team=>{
     const card = document.createElement('div');
     card.className='team-card';
     card.dataset.id = team.id;
     card.innerHTML = `
-      <div class="team-jersey" style="background:${team.primary};border-color:${team.secondary}"></div>
+      ${crestBadge(team)}
       <div class="team-name">${team.name}</div>
       <div class="stat-label"><span>ATA</span></div><div class="stat-bar"><i style="width:${team.atk*20}%"></i></div>
       <div class="stat-label"><span>DEF</span></div><div class="stat-bar"><i style="width:${team.def*20}%"></i></div>
@@ -762,6 +827,18 @@ function buildTeamGrid(){
   });
 }
 buildTeamGrid();
+
+document.querySelectorAll('#team-category-pills .pill').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    if(p.dataset.cat===Session.teamCategory) return;
+    document.querySelectorAll('#team-category-pills .pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    Session.teamCategory = p.dataset.cat;
+    AudioSys.menuClick();
+    buildTeamGrid();
+    refreshTeamSelectUI();
+  });
+});
 
 document.getElementById('slot1').addEventListener('click',()=>{Session.focusedSlot=1;refreshTeamSelectUI();});
 document.getElementById('slot2').addEventListener('click',()=>{Session.focusedSlot=2;refreshTeamSelectUI();});
