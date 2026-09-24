@@ -220,24 +220,30 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
   transition:background-color .1s;}
 .joy-zone.active .joy-stick{background:rgba(255,210,63,.75);}
 
-.action-pair{display:flex;flex-direction:column;align-items:center;gap:min(4vw,16px);pointer-events:none;flex-shrink:0;}
-.kick-btn,.pass-btn{
+.action-pair{display:flex;flex-direction:column;align-items:center;gap:min(2.6vw,11px);pointer-events:none;flex-shrink:0;}
+.kick-btn,.pass-btn,.conduzir-btn{
   position:relative;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;
   border-radius:50%;color:#fff;font-family:var(--font-display);font-weight:700;
   display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.35);
   transition:transform .06s,filter .06s;flex-shrink:0;
 }
 .kick-btn{
-  width:min(20vw,84px);height:min(20vw,84px);font-size:12px;
+  width:min(18vw,74px);height:min(18vw,74px);font-size:11px;
   background:radial-gradient(circle at 35% 30%,#ff8484,var(--coral));
   border:3px solid rgba(255,255,255,.5);
 }
 .pass-btn{
-  width:min(16vw,66px);height:min(16vw,66px);font-size:10px;
+  width:min(14vw,58px);height:min(14vw,58px);font-size:9px;
   background:radial-gradient(circle at 35% 30%,#7fd6ff,#2f8fd6);
   border:3px solid rgba(255,255,255,.5);
 }
-.kick-btn:active,.kick-btn.pressed,.pass-btn:active,.pass-btn.pressed{transform:scale(.88);filter:brightness(1.18);}
+.conduzir-btn{
+  width:min(13vw,52px);height:min(13vw,52px);font-size:8px;line-height:1.1;
+  background:radial-gradient(circle at 35% 30%,#a3f0a3,#2f9e44);
+  border:3px solid rgba(255,255,255,.5);
+}
+.kick-btn:active,.kick-btn.pressed,.pass-btn:active,.pass-btn.pressed,.conduzir-btn:active,.conduzir-btn.pressed{transform:scale(.88);filter:brightness(1.18);}
+.conduzir-btn.pressed{box-shadow:0 0 0 4px rgba(163,240,163,.55),0 4px 10px rgba(0,0,0,.35);}
 
 /* =========================================================================
    PAUSE / RESULT
@@ -366,6 +372,7 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
             <div class="ctrl-row"><span class="key">D</span> Direita</div>
             <div class="ctrl-row"><span class="key">ESPAÇO</span> Segurar p/ carregar chute</div>
             <div class="ctrl-row"><span class="key">SHIFT ESQ</span> Passar</div>
+            <div class="ctrl-row"><span class="key">C</span> Segurar p/ conduzir a bola</div>
           </div>
           <div>
             <div class="section-title">⌨️ JOGADOR 2 (teclado)</div>
@@ -375,16 +382,17 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
             <div class="ctrl-row"><span class="key">→</span> Direita</div>
             <div class="ctrl-row"><span class="key">ENTER</span> Segurar p/ carregar chute</div>
             <div class="ctrl-row"><span class="key">SHIFT DIR</span> Passar</div>
+            <div class="ctrl-row"><span class="key">/</span> Segurar p/ conduzir a bola</div>
           </div>
         </div>
       </div>
       <div class="card-panel" style="margin-bottom:14px;">
         <div class="section-title">📱 CELULAR / TABLET</div>
-        <p class="small-note">O joystick virtual fica no canto inferior esquerdo. Do lado direito ficam os botões azul "PASSAR" e vermelho "CHUTAR" — toque rápido em CHUTAR para um chute simples, ou segure para carregar força e solte para bater. No modo 2 jogadores, cada pessoa usa metade da tela, com seu próprio joystick e seus próprios botões.</p>
+        <p class="small-note">O joystick virtual fica no canto inferior esquerdo. Do lado direito ficam os botões verde "CONDUZIR", azul "PASSAR" e vermelho "CHUTAR" — segure CONDUZIR enquanto se movimenta para manter a bola grudada nos pés (para frente, para trás e para os lados); toque rápido em CHUTAR para um chute simples, ou segure para carregar força e solte para bater. No modo 2 jogadores, cada pessoa usa metade da tela, com seu próprio joystick e seus próprios botões.</p>
       </div>
       <div class="card-panel">
         <div class="section-title">⚽ DICAS</div>
-        <p class="small-note">Corra até a bola para dominá-la. Segure o botão de chute para carregar força — quanto mais tempo segurar, mais forte a bomba. Use PASSAR para tocar a bola ao seu companheiro de time. Você controla automaticamente o jogador do seu time mais perto da bola — um anel colorido embaixo dele mostra quem está sob seu comando no momento. O goleiro defende sozinho, mas fique atento aos contra-ataques da CPU!</p>
+        <p class="small-note">Corra até a bola para dominá-la. Segure CONDUZIR para manter o controle da bola enquanto corre em qualquer direção. Segure o botão de chute para carregar força — quanto mais tempo segurar, mais forte a bomba. Use PASSAR para tocar a bola ao seu companheiro de time. Você controla automaticamente o jogador do seu time mais perto da bola — um anel colorido embaixo dele mostra quem está sob seu comando no momento. O goleiro defende sozinho, mas fique atento aos contra-ataques da CPU!</p>
       </div>
     </div>
   </div>
@@ -457,12 +465,14 @@ h1,h2,h3{font-family:var(--font-display);margin:0;}
         <div class="touch-side left" id="touch-side-left">
           <div class="joy-zone p1" id="joy1"><div class="joy-base"></div><div class="joy-stick" id="joy1-stick"></div></div>
           <div class="action-pair" id="actions-p1">
+            <div class="conduzir-btn" id="conduzir1">CONDUZIR</div>
             <div class="pass-btn" id="pass1">PASSAR</div>
             <div class="kick-btn" id="kick1">CHUTAR</div>
           </div>
         </div>
         <div class="touch-side right" id="touch-side-right" style="display:none;">
           <div class="action-pair" id="actions-p2">
+            <div class="conduzir-btn" id="conduzir2">CONDUZIR</div>
             <div class="pass-btn" id="pass2">PASSAR</div>
             <div class="kick-btn" id="kick2">CHUTAR</div>
           </div>
@@ -925,8 +935,8 @@ AudioSys.setVolume(Settings.volume/100);
    ========================================================================= */
 const Input = {
   keys:{},
-  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false,passPressed:false,passKeyPrev:false},
-  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false,passPressed:false,passKeyPrev:false},
+  p1:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false,passPressed:false,passKeyPrev:false,touchConduzir:false,conduzir:false},
+  p2:{x:0,y:0,keyKick:false,touchKick:false,kick:false,prevKick:false,kickJustReleased:false,touchActive:false,passPressed:false,passKeyPrev:false,touchConduzir:false,conduzir:false},
 };
 window.addEventListener('keydown', e=>{
   Input.keys[e.code]=true;
@@ -957,6 +967,7 @@ function pollKeyboard(){
   const passKey1 = !!k['ShiftLeft'];
   if(passKey1 && !Input.p1.passKeyPrev) Input.p1.passPressed = true;
   Input.p1.passKeyPrev = passKey1;
+  Input.p1.conduzir = !!k['KeyC'] || Input.p1.touchConduzir;
 
   if(!Input.p2.touchActive){
     let x2=0,y2=0;
@@ -971,6 +982,7 @@ function pollKeyboard(){
   const passKey2 = !!k['ShiftRight'];
   if(passKey2 && !Input.p2.passKeyPrev) Input.p2.passPressed = true;
   Input.p2.passKeyPrev = passKey2;
+  Input.p2.conduzir = !!k['Slash'] || Input.p2.touchConduzir;
 }
 
 /* ---------------------------------------------------------------------
@@ -1077,6 +1089,32 @@ function setupPassButton(btnId, player){
 }
 setupPassButton('pass1',Input.p1);
 setupPassButton('pass2',Input.p2);
+
+function setupConduzirButton(btnId, player){
+  const btn=document.getElementById(btnId);
+  let activeId=null;
+  function start(e){
+    if(activeId!==null) return; // already pressed by another finger
+    activeId=e.pointerId;
+    try{ btn.setPointerCapture(activeId); }catch(err){}
+    player.touchConduzir=true;
+    btn.classList.add('pressed');
+    e.preventDefault();
+  }
+  function end(e){
+    if(e.pointerId!==activeId) return;
+    try{ btn.releasePointerCapture(activeId); }catch(err){}
+    activeId=null;
+    player.touchConduzir=false;
+    btn.classList.remove('pressed');
+    e.preventDefault();
+  }
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointercancel', end);
+}
+setupConduzirButton('conduzir1',Input.p1);
+setupConduzirButton('conduzir2',Input.p2);
 
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
 
@@ -1560,6 +1598,32 @@ const Match = {
     Input.p1.kickJustReleased=false; Input.p2.kickJustReleased=false;
     Input.p1.passPressed=false; Input.p2.passPressed=false;
 
+    // Active dribble control ("CONDUZIR"): while the button/key is held and
+    // the player is close enough to be considered in possession, keep the
+    // ball glued just ahead of the player's current movement direction
+    // (forward, backward or sideways) instead of leaving it to the loose
+    // collision nudge below, which could let the ball drift away or lag
+    // behind when running.
+    for(const p of this.players){
+      let held=false, ix=0, iy=0;
+      if(p.control==='human1'){ held=Input.p1.conduzir; ix=Input.p1.x; iy=Input.p1.y; }
+      else if(p.control==='human2'){ held=Input.p2.conduzir; ix=Input.p2.x; iy=Input.p2.y; }
+      if(!held) continue;
+      const dx=this.ball.x-p.x, dy=this.ball.y-p.y, dist=Math.hypot(dx,dy);
+      if(dist > PLAYER_R+BALL_R+26) continue; // ball not close enough to be "in possession"
+      const mag = Math.hypot(ix,iy);
+      let fx,fy;
+      if(mag>0.1){ fx=ix/mag; fy=iy/mag; } else { fx = p.facing>=0?1:-1; fy=0; }
+      const holdDist = PLAYER_R+BALL_R+6;
+      const targetBX = p.x + fx*holdDist, targetBY = p.y + fy*holdDist;
+      const followRate = Math.min(1, dt*16);
+      this.ball.x += (targetBX-this.ball.x)*followRate;
+      this.ball.y += (targetBY-this.ball.y)*followRate;
+      const pSpeed = Math.hypot(p.vx,p.vy);
+      this.ball.vx = fx*pSpeed;
+      this.ball.vy = fy*pSpeed;
+    }
+
     // player-player collisions (soft push apart)
     for(let i=0;i<this.players.length;i++){
       for(let j=i+1;j<this.players.length;j++){
@@ -1586,6 +1650,7 @@ const Match = {
         this.ball.vy += ny*pSpeed*0.5*dt*10;
       }
     }
+
 
     this.ball.update(dt);
 
