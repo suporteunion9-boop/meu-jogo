@@ -1155,8 +1155,8 @@ class Ball {
 
 class Player {
   constructor(team, side, role, control){
-    this.team=team; this.side=side; this.role=role; // role: 'gk' | 'field1' | 'field2'
-    this.control=control; // 'human1' | 'human2' | 'ai' | 'gk-ai' | 'support-ai'
+    this.team=team; this.side=side; this.role=role; // role: 'gk' | 'field1'
+    this.control=control; // 'human1' | 'human2' | 'ai' | 'gk-ai'
     this.x=0; this.y=0; this.vx=0; this.vy=0;
     this.facing = side==='left'? 1:-1;
     this.runPhase = Math.random()*10;
@@ -1274,14 +1274,23 @@ function aiFieldPlayer(p, ball, diffKey, isChaser, attackBias, goalX, ownGoalX){
 function aiGoalkeeper(p, ball, goalLineX, side){
   const targetY = clamp(ball.y, FH/2-GOAL_HALF+14, FH/2+GOAL_HALF-14);
   let targetX = goalLineX + (side==='left'? 26:-26);
-  const closeBall = Math.hypot(ball.x-goalLineX, 0) < 150;
-  if(closeBall){ targetX += (side==='left'?1:-1) * clamp((150-Math.hypot(ball.x-goalLineX,0))*0.25,0,40); }
+  const distXToLine = Math.abs(ball.x-goalLineX);
+  const closeBall = distXToLine < 150;
+  if(closeBall){ targetX += (side==='left'?1:-1) * clamp((150-distXToLine)*0.25,0,40); }
   const dx=targetX-p.x, dy=targetY-p.y;
   const dist=Math.max(1,Math.hypot(dx,dy));
-  let mx=dx/dist*0.8, my=dy/dist*0.9;
+  // Move at full speed so the keeper actually keeps up with the ball instead
+  // of lagging behind it — a slow/late keeper is what made saves feel broken.
+  let mx=dx/dist, my=dy/dist;
   let wantKick=false, wantRelease=false;
   const distToBall = Math.hypot(ball.x-p.x, ball.y-p.y);
-  if(distToBall < 55){ wantKick=true; wantRelease = Math.random()<0.35; }
+  if(distToBall < 55){
+    wantKick=true;
+    // Hold the ball just long enough to build real power (reusing the same
+    // charge meter as a normal kick) instead of releasing almost instantly
+    // with a near-zero-power tap that let attackers immediately win it back.
+    if(p.kickCharge > 0.4 && Math.random() < 0.5) wantRelease = true;
+  }
   return {mx,my,wantKick,wantRelease};
 }
 
@@ -1371,23 +1380,21 @@ const Match = {
     const team1=Session.team1, team2=Session.team2;
     const mode = Session.mode;
     this.players = [];
-    // Team 1 (left side) — outfield1 is human1 always
+    // Each side has exactly 2 players in play: one outfield player and one
+    // goalkeeper. Team 1's outfield player is always human1; Team 2's is
+    // human2 in 2-player mode, or CPU-controlled in 1-player mode.
     const t1f1 = new Player(team1,'left','field1', 'human1');
-    const t1f2 = new Player(team1,'left','field2', 'support-ai');
     const t1gk = new Player(team1,'left','gk', 'gk-ai');
-    // Team 2 (right side)
     const t2f1 = new Player(team2,'right','field1', mode==='2p' ? 'human2' : 'ai');
-    const t2f2 = new Player(team2,'right','field2', 'support-ai');
     const t2gk = new Player(team2,'right','gk', 'gk-ai');
-    this.players.push(t1f1,t1f2,t1gk,t2f1,t2f2,t2gk);
+    this.players.push(t1f1,t1gk,t2f1,t2gk);
     this.resetPositions();
   },
   resetPositions(){
     this.players.forEach(p=>{
       const isLeft = p.side==='left';
       if(p.role==='gk'){ p.homeX = isLeft? 40 : FW-40; p.homeY=FH/2; }
-      else if(p.role==='field1'){ p.homeX = isLeft? FW*0.34 : FW*0.66; p.homeY=FH*0.42; }
-      else { p.homeX = isLeft? FW*0.30 : FW*0.70; p.homeY=FH*0.62; }
+      else { p.homeX = isLeft? FW*0.34 : FW*0.66; p.homeY=FH*0.42; }
       p.x=p.homeX; p.y=p.homeY; p.vx=0; p.vy=0; p.kickCharge=0; p.isCharging=false;
     });
     this.ball.reset();
@@ -1512,13 +1519,19 @@ const Match = {
     // control mapping per player
     for(const p of this.players){
       let mx=0,my=0,wKick=false,wRelease=false,wPass=false,passTarget=null;
+      // Outfield teammate (used by the AI's lay-off decision below) — with
+      // only one outfield player per side now, this is simply absent, so
+      // that automatic behavior naturally never triggers.
       const teammate = this.players.find(q=>q.side===p.side && q!==p && q.role!=='gk');
+      // Any teammate at all (the goalkeeper counts) — this is who the human
+      // PASS button targets, i.e. a back-pass to your own keeper.
+      const anyTeammate = this.players.find(q=>q.side===p.side && q!==p);
       if(p.control==='human1'){
         mx=Input.p1.x; my=Input.p1.y; wKick=Input.p1.kick; wRelease=Input.p1.kickJustReleased;
-        wPass=Input.p1.passPressed; passTarget=teammate;
+        wPass=Input.p1.passPressed; passTarget=anyTeammate;
       } else if(p.control==='human2'){
         mx=Input.p2.x; my=Input.p2.y; wKick=Input.p2.kick; wRelease=Input.p2.kickJustReleased;
-        wPass=Input.p2.passPressed; passTarget=teammate;
+        wPass=Input.p2.passPressed; passTarget=anyTeammate;
       } else if(p.control==='ai' || p.control==='support-ai'){
         const goalX = p.side==='left'? FW : 0;
         const ownGoalX = p.side==='left'? 0 : FW;
